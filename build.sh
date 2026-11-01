@@ -1,7 +1,7 @@
 #!/bin/sh
 set -eu
 HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-ROOT=$(CDPATH= cd -- "$HERE/../.." && pwd)
+ROOT=$HERE
 SRC=${1:?usage: build.sh /path/to/SDLPoP-source [build-dir]}
 BUILD=${2:-"$ROOT/build/sdlpop"}
 : "${AROS_SYSROOT:?set AROS_SYSROOT to the AROS Developer sysroot}"

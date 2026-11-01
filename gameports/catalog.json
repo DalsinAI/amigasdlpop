@@ -1,0 +1,21 @@
+{
+  "schema": 1,
+  "ports": {
+    "sdlpop": {
+      "order": 3,
+      "title": "SDLPoP",
+      "source": {
+        "kind": "git",
+        "url": "https://github.com/NagyD/SDLPoP.git",
+        "commit": "3c5add5fb7f83d4ceb542823ab66d00146c4271b",
+        "submodules": false
+      },
+      "contentPolicy": "Preserve upstream notices. Commercial Prince of Persia data is not bundled.",
+      "runtimeData": {
+        "mode": "project-data-plus-auto-fetch-demo",
+        "dataset": "pop1-demo",
+        "manifest": "gameports/runtime-data.json"
+      }
+    }
+  }
+}

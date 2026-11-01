@@ -1,6 +1,6 @@
 #!/bin/sh
 set -eu
-HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd); ROOT=$(CDPATH= cd -- "$HERE/../.." && pwd)
+HERE=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd); ROOT=$HERE
 SRC=${1:-"$ROOT/build/game-ports/sources/sdlpop"}; OUT=${2:-"$ROOT/build/os3/sdlpop"}
 : "${STOVE:?set STOVE to an isolated 16.2.0-open3 stove root}"; SYS="$STOVE/prefix/m68k-amigaos"; PATCH="$HERE/patches/0001-amigaos3-opengpu.patch"
 python3 "$ROOT/scripts/verify_gameport_stove.py" --stove "$STOVE" >/dev/null

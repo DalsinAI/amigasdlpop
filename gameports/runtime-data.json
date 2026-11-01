@@ -1,0 +1,19 @@
+{
+  "schema": 1,
+  "policy": "Bundle data when redistribution is clearly licensed. Otherwise fetch public/freeware/shareware/demo data from the recorded upstream/public source and stage it locally without committing it to source control.",
+  "datasets": {
+    "pop1-demo": {
+      "games": [
+        "sdlpop"
+      ],
+      "filename": "pop1-demo.zip",
+      "urls": [
+        "https://www.popot.org/get_the_games/software/PoP1_demo.zip"
+      ],
+      "sha256": null,
+      "availability": "demo-public-download",
+      "packaging": "fetch-on-demand",
+      "notes": "Two-level Prince of Persia demo reference dataset. SDLPoP source also carries its own project runtime data."
+    }
+  }
+}
