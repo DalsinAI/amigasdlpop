@@ -1,6 +1,6 @@
 # Standalone port repository
 
-`amigasdlpop` is the canonical home of the AmigaOS 3.x / AmigaChrome work for
+`amigasdlpop` is the canonical home of the AmigaOS 3.x / AmiCradle work for
 `SDLPoP`. Its history was split from `DalsinAI/amigachrome-gameports` without
 flattening the commits.
 

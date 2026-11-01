@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Fetch publicly available runtime datasets for AmigaChrome game ports.
+"""Fetch publicly available runtime datasets for AmiCradle game ports.
 
 Nothing is fetched implicitly. Network access requires --allow-network.
 Verified datasets are written to build/game-ports/test-data-cache by default.
@@ -79,7 +79,7 @@ def fetch_one(name: str, spec: dict, cache: Path, allow_network: bool) -> dict:
         try:
             with tempfile.NamedTemporaryFile(prefix=dest.name + ".", delete=False, dir=cache) as fh:
                 tmp = Path(fh.name)
-            req = urllib.request.Request(url, headers={"User-Agent": "AmigaChrome-GamePorts/1.0"})
+            req = urllib.request.Request(url, headers={"User-Agent": "AmiCradle-GamePorts/1.0"})
             with urllib.request.urlopen(req, timeout=120) as src, tmp.open("wb") as out:
                 shutil.copyfileobj(src, out)
             actual = sha256(tmp)
