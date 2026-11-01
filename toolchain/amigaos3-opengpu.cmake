@@ -18,7 +18,7 @@ if(NOT DEFINED AMIGA_STOVE OR AMIGA_STOVE STREQUAL "")
   elseif(DEFINED ENV{STOVE} AND NOT "$ENV{STOVE}" STREQUAL "")
     set(AMIGA_STOVE "$ENV{STOVE}")
   else()
-    set(AMIGA_STOVE "$ENV{HOME}/AmigaChrome/stoves/os32-gcc16")
+    set(AMIGA_STOVE "$ENV{HOME}/AmiCradle/stoves/os32-gcc16")
   endif()
 endif()
 

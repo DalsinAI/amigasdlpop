@@ -1,4 +1,4 @@
-# SDLPoP — AmigaOS 3.x / AmigaChrome
+# SDLPoP — AmigaOS 3.x / AmiCradle
 
 Target: **AC090 / AmigaOS 3.x / 68040 + FPU**
 
