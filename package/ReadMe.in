@@ -21,10 +21,21 @@ Requirements
 Installing
 ----------
 
-Unpack the archive where you keep games (lha x sdlpop-...lha Games:),
-then put the game data in the drawer's data drawer. Settings, saves,
-replays and screenshots go to the drawer's User drawer, made on the first
-start. Nothing is written anywhere else.
+OS 3.2 has no lha command: unpack the archive with OpenCompress (on
+AmiCradle, SYS:Utilities/OpenCompress), for example into RAM:
+
+  OpenCompress x sdlpop-@VERSION@-68040.lha RAM:
+
+Then open RAM: and double-click Install-SDLPoP. The Amiga Installer
+checks for a 68040 or 68060 with its FPU, asks for the drawer to put
+SDLPoP in (Work:Games is offered), makes sure LIBS:GFOpenGPU has
+SDL2.module and SDL2_image.module (copying them from LIBS:OpenGPU when
+only that has them), and copies the game. Then put the game data in the
+drawer's data drawer.
+
+Settings, saves, replays and screenshots go to the drawer's User drawer,
+made on the first start. Nothing is written anywhere else. Run the
+Installer again to update: User and SDLPoP.ini are left as they are.
 
 Playing
 -------
