@@ -1,0 +1,31 @@
+{
+  "upstream_commit": "3c5add5fb7f83d4ceb542823ab66d00146c4271b",
+  "repository_commit": "3e9b058625c38cf1b4ae3e02b4c61c651d83c43f",
+  "source_date_epoch": "1766575481",
+  "recipe": {
+    "build-amiga.sh": "9fcfd52a4e8e0cb72bff41a6ae8992569699213d94d613fc8eba6fcf80aaad08"
+  },
+  "patches": {
+    "0001-amigaos3-opengpu.patch": "2a88326753bc2740078c96e045071aecbed17377db76fa00d9696220767ca611"
+  },
+  "compiler_release": "16.2.0-open5",
+  "compiler_archive_sha256": "unpublished",
+  "sdk_inputs": {
+    "lib/libSDL2.a": "215d6ea9a61c690274596009ae5e7c4d1c2b3ba8f0a70129d6557abdf4230397",
+    "lib/libSDL2_image.a": "758b8ecda0620688f2745b73deef9611e80f999341232b01618a42383da35da6",
+    "lib/libGL.a": "922247c40ca2aceda1f5a0e4517e5a4e0a7bc16b056e659235ccde0b839f6d39",
+    "include/SDL2/SDL.h": "952e89e1dc4e0dd1a7bea6a153df632b8cdb6e433a9b3b0702c5ffe15b9b9360",
+    "include/SDL2/SDL_image.h": "f72b0187df3b81109d0a561db0fbde3f1be1ee10f30552a9fd4756ae11bcf7fd"
+  },
+  "network": "upstream source fetch only (pinned commit)",
+  "executable_sha256": "976f5f531608eab1f334a03d8015897552ce2e6fa1a781bb223cfccac7cdb2c8",
+  "executable_bytes": 593424,
+  "settings_sha256": "e1454e8d77f6a5aec83d3ce7fb74b46f6f72e8c8caf15dddb165be9430cbb5e0",
+  "scope": "Source build only; no game data; no runtime or release pass implied",
+  "compiler_files_sha256": {
+    "bin/m68k-amigaos-gcc": "b20d61e9dcd2defe093c0f562e96611e6f5ae3cb0588cf1063463fd913f189f6",
+    "bin/m68k-amigaos-as": "c93fe82ebda280d861ca65ab68fec2d64e63c89fd327a069bcf1c5928e295c46",
+    "bin/m68k-amigaos-ld": "c55353a0e0c7c9d55574c5cbd6c633c11b4357fb078d9615582ea313b0fcdf88",
+    "libexec/gcc/m68k-amigaos/16.2.0b/cc1": "d638cf066b6751a106e779a56f20c4b3ebfa62df30a2889f4767540477334399"
+  }
+}
