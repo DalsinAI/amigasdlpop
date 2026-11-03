@@ -31,8 +31,10 @@ for the 68040 and FPU, linking the stove's `libSDL2.a` and `libSDL2_image.a`
 (GFOpenGPU's link stubs).
 
 Through Cradle (the build the lab tests use): `stove_build` with the stove
-`os32-gcc16`, target `.` for the program, `runtime-data` for the lab's game
-data and `tests/lab` for the lab tools. From a checkout, with a staged
+`os32-gcc16`, target `.` for the program, `package` for the LhA archive,
+`runtime-data` for the lab's game data and `tests/lab` for the lab tools
+(JoyPort, HoldKeys, Chop and Grab, which saves a rectangle of the screen
+as a PNG). From a checkout, with a staged
 stove:
 
 ```sh
@@ -70,15 +72,38 @@ The patches, all AmigaOS only (`__amigaos__`):
   with `fps` the mixer's buffers, late callbacks and mixing time.
 - `0006-amiga-saves.patch`: replays in `PROGDIR:User/replays`
   (`SDLPoP.ini`), so the game writes only in `PROGDIR:User`.
+- `0007-amiga-workbench.patch`: started from its icon, the game starts as
+  from a Shell with no options (libnix gives it the WBStartup message for
+  its arguments), and its log and SDL's go to `NIL:`, so no console
+  window opens.
+
+The package (target `package`, `package/build-amiga.sh`) builds the game
+the same way, then `tools/make_package.py` (from amigaopentyrian) makes
+`sdlpop-VERSION-68040.lha` with its `.sha256` and an Aminet-style
+`.readme`: the drawer `SDLPoP` with `prince`, `SDLPoP.ini`, `ReadMe`,
+`COPYING.txt`, their GlowIcons and `data/ReadMe.txt`, and the same drawer
+as `SDLPoP.tar` for a lab. It checks that `prince` and `SDLPoP.ini` are
+the ones the receipt names. The icons (`icons/`) are SDLPoP's own program
+icon (upstream `src/icon.ico`, 32x32) made into OS 3.5 GlowIcons by
+amicradle's `scripts/port_icons.py`:
+
+```sh
+python3 -I ../amicradle/scripts/port_icons.py icons/icons.json --out icons
+```
+
+regenerates the committed `.info` files byte for byte.
 
 ## Installing
 
-Make a drawer, for example `Work:Games/SDLPoP`, and put in it `prince`,
-`SDLPoP.ini` and `COPYING` from the build, and the game's `data/` drawer
-beside them. The program needs GFOpenGPU's `SDL2.module` and
+Unpack the archive where you keep games (`lha x
+sdlpop-1.24rc-3c5add5-amigaos3-test1-68040.lha Work:Games/`): it makes the
+drawer `SDLPoP` with its icon. Put the game's `data/` drawer (the DAT
+files; see Game data) in it, over `data/ReadMe.txt`. From a build instead
+of the archive: make the drawer and put in it `prince`, `SDLPoP.ini` and
+`COPYING` and the `data/` drawer. The program needs GFOpenGPU's `SDL2.module` and
 `SDL2_image.module` in `LIBS:GFOpenGPU/`, AHI for sound, and a 68040 or
-68060 with its FPU. From a Shell: `Stack 262144`, then `prince` in the
-drawer.
+68060 with its FPU. Double-click `prince`, or from a Shell: `Stack
+262144`, then `prince` in the drawer.
 
 ## Running
 
@@ -114,7 +139,7 @@ the game gets.
 
 ## Status
 
-**COMPILED**, not RELEASE (see Observed below and the release gates in
+**PACKAGED**, not RELEASE (see Observed below and the release gates in
 amicradle `docs/porting/MEASUREMENT.md`).
 
 | Gate | State |
@@ -127,7 +152,8 @@ amicradle `docs/porting/MEASUREMENT.md`).
 | Joystick / CD32 pad | not tested: no stick in the lab (SDL opens port 2 as a game controller) |
 | Sound | AHI opened and fed at 44.1 kHz, OPL3 music and effects mixed, late buffers rare (4 in 6,357); not heard (muted lab) |
 | Quick save, saved game, settings and replays across a cold restart | done |
-| Package, play test | not yet |
+| Own drawer with GlowIcons, ReadMe, start from Workbench, LhA package | done (the archive unpacked on Linux; no `lha` in the lab, so the drawer went in from `SDLPoP.tar`) |
+| Five-minute play test | not yet |
 
 ## Observed
 
@@ -349,3 +375,44 @@ started with none:
 
 Not covered: the hall of fame (it needs the game won), a full disk or a
 write-protected drawer.
+
+### Package: the drawer, its icons and the start from Workbench, 3 November 2026
+
+Built by Cradle's `stove_build` of `3a06a94`, target `package` (job
+`j20261103T023514-1c0c68`, `receipts/6-package-open5-stove_build.json`):
+`sdlpop-1.24rc-3c5add5-amigaos3-test1-68040.lha`, 310,665 bytes, SHA-256
+`d0d998e2...`, nine members; `prince` 599,360 bytes, SHA-256
+`f5962362...` (0007 changes the program; `SDLPoP.ini` is step 5's).
+The archive holds `SDLPoP.info` and the drawer `SDLPoP/` with `prince`,
+`prince.info`, `SDLPoP.ini`, `ReadMe`, `ReadMe.info`, `COPYING.txt`,
+`COPYING.txt.info` and `data/ReadMe.txt`; no game data. Read back with
+`tools/lha_archive.py` (lh5 decoded, every CRC checked), a local package
+build's archive gave the same nine members byte for byte as the drawer
+it was made from.
+
+In `lab:sdlpop` there is no `lha`, so the same drawer went in from the
+job's `SDLPoP.tar` (untar) as `Work:Games/SDLPoP`, with the lab's game
+data in its `data` drawer (the earlier test drawer moved aside to
+`SDLPoP.lab`):
+
+- **Icons:** the Games window shows the drawer as a GlowIcon with the
+  game's own art as its badge; the drawer opens on `COPYING.txt`,
+  `prince` (the kid's head on the tool's gears) and `ReadMe`.
+- **From Workbench:** a double-click on `prince` opened the info screen on
+  the game's own 320x200 screen, then the title and Level 1; no console
+  window opened beside it (0007). Help wrote
+  `User/screenshots/screenshot_000.png`; Ctrl+Q went back to the
+  Workbench, the drawer as it was.
+- **ReadMe:** a double-click opened it in a text viewer (the icon's
+  default tool is `SYS:Utilities/MultiView`, which on the lab's system is
+  OpenView).
+
+![The Games drawer: SDLPoP's drawer icon](docs/observed/step6-workbench-games.png)
+![The SDLPoP drawer: the licence, the game and the ReadMe](docs/observed/step6-workbench-drawer.png)
+
+(Grabbed in the lab with `tests/lab`'s Grab as PNG: `Grab SYS:T/wb.png X Y
+W H` saves that rectangle of the frontmost screen.)
+
+Not covered: `lha x` on the Amiga (the archive was read back on Linux
+only), `COPYING.txt` opened from its icon, a Workbench with no GlowIcon
+support (OS 3.1).
