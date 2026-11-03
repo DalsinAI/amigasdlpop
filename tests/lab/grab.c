@@ -3,7 +3,8 @@
  * the screen but does not keep it). Reads the screen through
  * cybergraphics.library's ReadPixelArray, so it works on RTG screens.
  *   Grab FILE [X Y W H]   (default: the whole screen)
- * Fetch the file with Chop and convert it on the PC.
+ * A FILE ending in .png is written as PNG through GFOpenGPU's SDL2_image
+ * (IMG_SavePNG): small enough to fetch from a lab. Fetch it with Chop.
  * MIT, Copyright (c) 2026 AmiCradle Team. */
 #include <exec/types.h>
 #include <exec/memory.h>
@@ -13,6 +14,9 @@
 #include <proto/intuition.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
+#include <SDL.h>
+#include <SDL_image.h>
 
 struct IntuitionBase *IntuitionBase;
 static struct Library *CyberGfxBase;
@@ -72,6 +76,19 @@ int main(int argc, char **argv)
     read_pixel_array(buf, (UWORD)(w * 3), &s->RastPort, (UWORD)x, (UWORD)y, (UWORD)w, (UWORD)h);
     int sw = s->Width, sh = s->Height;
     UnlockIBase(lock);
+    size_t n = strlen(argv[1]);
+    if (n > 4 && strcasecmp(argv[1] + n - 4, ".png") == 0) {
+        SDL_Surface *surf = SDL_CreateRGBSurfaceWithFormatFrom(buf, w, h, 24, w * 3, SDL_PIXELFORMAT_RGB24);
+        if (surf != NULL && IMG_SavePNG(surf, argv[1]) == 0) {
+            printf("Grab: %dx%d from %d,%d of the %dx%d screen into %s (PNG)\n", w, h, x, y, sw, sh, argv[1]);
+            rc = 0;
+        } else {
+            printf("Grab: cannot write %s: %s\n", argv[1], SDL_GetError());
+        }
+        if (surf != NULL) SDL_FreeSurface(surf);
+        FreeVec(buf);
+        goto out;
+    }
     FILE *f = fopen(argv[1], "wb");
     if (f != NULL) {
         fprintf(f, "P6\n%d %d\n255\n", w, h);
