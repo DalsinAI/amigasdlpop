@@ -1,0 +1,183 @@
+diff --git a/src/seg000.c b/src/seg000.c
+index 778ea1a..2dc0ddb 100644
+--- a/src/seg000.c
++++ b/src/seg000.c
+@@ -1372,7 +1372,14 @@ void read_joyst_control() {
+ 		joy_axis_ptr = joy_axis;
+ 	}
+ 
++#ifdef __amigaos__
++	// AmigaOS: a stick read through SDL_Joystick (lowlevel.library) is
++	// digital, with no drift for joystick_only_horizontal to guard against,
++	// and its up is the jump
++	if (joystick_only_horizontal && !using_sdl_joystick_interface) {
++#else
+ 	if (joystick_only_horizontal) {
++#endif
+ 		get_joystick_state_hor_only(joy_axis_ptr[SDL_CONTROLLER_AXIS_LEFTX], joy_left_stick_states);
+ 		get_joystick_state_hor_only(joy_axis_ptr[SDL_CONTROLLER_AXIS_RIGHTX], joy_right_stick_states);
+ 	} else {
+diff --git a/src/seg009.c b/src/seg009.c
+index f580824..21facdb 100644
+--- a/src/seg009.c
++++ b/src/seg009.c
+@@ -996,6 +996,12 @@ int set_joy_mode() {
+ 	}
+ 
+ 	is_keyboard_mode = !is_joyst_mode;
++#ifdef __amigaos__
++	{
++		extern void amiga_log_joysticks(const char* when);
++		amiga_log_joysticks("set_joy_mode");
++	}
++#endif
+ 	return is_joyst_mode;
+ }
+ 
+@@ -3506,6 +3512,111 @@ void toggle_fullscreen(void) {
+ 
+ bool ignore_tab = false;
+ 
++#ifdef __amigaos__
++/*
++ * AmigaOS: "SetEnv SDLPOP_INPUT RAM:input.txt" logs every key, text, focus,
++ * joystick and pad event SDL gives the game, with SDL's time in ms, and the
++ * joysticks SDL finds, for lab play tests.
++ */
++static FILE* amiga_input_log;
++static int amiga_input_log_checked;
++
++static FILE* amiga_input_file(void) {
++	if (!amiga_input_log_checked) {
++		amiga_input_log_checked = 1;
++		const char* name = getenv("SDLPOP_INPUT");
++		if (name != NULL && name[0] != '\0') amiga_input_log = fopen(name, "a");
++	}
++	return amiga_input_log;
++}
++
++void amiga_log_joysticks(const char* when) {
++	FILE* f = amiga_input_file();
++	if (f == NULL) return;
++	int n = SDL_NumJoysticks();
++	fprintf(f, "%u %s: %d joystick(s)\n", (unsigned)SDL_GetTicks(), when, n);
++	for (int i = 0; i < n; ++i) {
++		fprintf(f, "  joystick %d: \"%s\", %s\n", i, SDL_JoystickNameForIndex(i),
++		        SDL_IsGameController(i) ? "game controller" : "joystick (no controller mapping)");
++	}
++	fprintf(f, "  game uses: %s\n", !is_joyst_mode ? "keyboard" :
++	        using_sdl_joystick_interface ? "SDL_Joystick" : "SDL_GameController");
++	fflush(f);
++}
++
++static void amiga_log_event(const SDL_Event* e) {
++	FILE* f = amiga_input_file();
++	if (f == NULL) return;
++	switch (e->type) {
++		case SDL_KEYDOWN: case SDL_KEYUP:
++			fprintf(f, "%u key %s %s%s mod %04x\n", (unsigned)e->key.timestamp,
++			        SDL_GetScancodeName(e->key.keysym.scancode),
++			        e->type == SDL_KEYDOWN ? "down" : "up", e->key.repeat ? " (repeat)" : "",
++			        (unsigned)e->key.keysym.mod);
++			break;
++		case SDL_TEXTINPUT:
++			fprintf(f, "%u text \"%s\"\n", (unsigned)e->text.timestamp, e->text.text);
++			break;
++		case SDL_WINDOWEVENT:
++			if (e->window.event == SDL_WINDOWEVENT_FOCUS_GAINED) fprintf(f, "%u focus gained\n", (unsigned)e->window.timestamp);
++			else if (e->window.event == SDL_WINDOWEVENT_FOCUS_LOST) fprintf(f, "%u focus lost\n", (unsigned)e->window.timestamp);
++			else return;
++			break;
++		case SDL_CONTROLLERBUTTONDOWN: case SDL_CONTROLLERBUTTONUP:
++			fprintf(f, "%u pad button %s %s\n", (unsigned)e->cbutton.timestamp,
++			        SDL_GameControllerGetStringForButton(e->cbutton.button),
++			        e->type == SDL_CONTROLLERBUTTONDOWN ? "down" : "up");
++			break;
++		case SDL_CONTROLLERAXISMOTION:
++			fprintf(f, "%u pad axis %s %d\n", (unsigned)e->caxis.timestamp,
++			        SDL_GameControllerGetStringForAxis(e->caxis.axis), e->caxis.value);
++			break;
++		case SDL_JOYBUTTONDOWN: case SDL_JOYBUTTONUP:
++			fprintf(f, "%u joy button %d %s\n", (unsigned)e->jbutton.timestamp, e->jbutton.button,
++			        e->type == SDL_JOYBUTTONDOWN ? "down" : "up");
++			break;
++		case SDL_JOYAXISMOTION:
++			fprintf(f, "%u joy axis %d %d\n", (unsigned)e->jaxis.timestamp, e->jaxis.axis, e->jaxis.value);
++			break;
++		case SDL_JOYHATMOTION:
++			fprintf(f, "%u joy hat %d %d\n", (unsigned)e->jhat.timestamp, e->jhat.hat, e->jhat.value);
++			break;
++		case SDL_JOYDEVICEADDED: case SDL_CONTROLLERDEVICEADDED:
++			fprintf(f, "%u %s added %d\n", (unsigned)e->jdevice.timestamp,
++			        e->type == SDL_JOYDEVICEADDED ? "joystick" : "controller", e->jdevice.which);
++			break;
++		case SDL_JOYDEVICEREMOVED: case SDL_CONTROLLERDEVICEREMOVED:
++			fprintf(f, "%u %s removed %d\n", (unsigned)e->jdevice.timestamp,
++			        e->type == SDL_JOYDEVICEREMOVED ? "joystick" : "controller", e->jdevice.which);
++			break;
++		default:
++			return;
++	}
++	fflush(f);
++}
++
++/*
++ * AmigaOS pads: the fire button is the game's Shift (grab, sword, careful
++ * step) and the second button jumps, so a one-button stick or a CD32 pad
++ * plays it. Through SDL_GameController (GFOpenInput's standard layout,
++ * where red is A and blue is B): A acts as X and B as Y; X and Y and the
++ * d-pad stay as upstream has them, and down is the d-pad's or the stick's.
++ * Through SDL_Joystick (lowlevel.library: 0 red, 1 blue, 2 green, 3 yellow,
++ * 4 play, 5 forward, 6 reverse): red as X, blue as Y, play opens the menu;
++ * green and yellow keep upstream's numbers (2 Y, 3 X).
++ */
++static int amiga_controller_button(int b) {
++	if (b == SDL_CONTROLLER_BUTTON_A) return SDL_CONTROLLER_BUTTON_X;
++	if (b == SDL_CONTROLLER_BUTTON_B) return SDL_CONTROLLER_BUTTON_Y;
++	return b;
++}
++static int amiga_joystick_button(int b) {
++	if (b == 0) return SDL_JOYSTICK_BUTTON_X;
++	if (b == 1) return SDL_JOYSTICK_BUTTON_Y;
++	return b;
++}
++#endif
++
+ void process_events() {
+ 	// Process all events in the queue.
+ 	// Previously, this procedure would wait for *one* event and process it, then return.
+@@ -3514,6 +3625,17 @@ void process_events() {
+ 	// simultaneous SDL2 KEYDOWN and TEXTINPUT events.)
+ 	SDL_Event event;
+ 	while (SDL_PollEvent(&event) == 1) { // while there are still events to be processed
++#ifdef __amigaos__
++		amiga_log_event(&event);
++		if (event.type == SDL_CONTROLLERBUTTONDOWN || event.type == SDL_CONTROLLERBUTTONUP) {
++			event.cbutton.button = (Uint8)amiga_controller_button(event.cbutton.button);
++		} else if (event.type == SDL_JOYBUTTONDOWN || event.type == SDL_JOYBUTTONUP) {
++			if (using_sdl_joystick_interface && event.type == SDL_JOYBUTTONDOWN && event.jbutton.button == 4) {
++				last_key_scancode = SDL_SCANCODE_BACKSPACE; // a CD32 pad's play: the menu
++			}
++			event.jbutton.button = (Uint8)amiga_joystick_button(event.jbutton.button);
++		}
++#endif
+ 		switch (event.type) {
+ 			case SDL_KEYDOWN:
+ 			{
+@@ -3816,6 +3938,16 @@ void process_events() {
+ 						update_screen();
+ 						break;
+ 
++#ifdef __amigaos__
++					case SDL_WINDOWEVENT_FOCUS_LOST:
++						// What the commented-out SDL 1.2 code above meant to do: a key
++						// or button held while the window goes inactive (another
++						// window or screen chosen) would otherwise stay held, as the
++						// game gets no key-up for it, and the kid runs on.
++						for (int i = 0; i < SDL_NUM_SCANCODES; ++i) key_states[i] &= ~KEYSTATE_HELD;
++						for (int i = 0; i < JOYINPUT_NUM; ++i) joy_button_states[i] &= ~KEYSTATE_HELD;
++						break;
++#endif
+ 					case SDL_WINDOWEVENT_FOCUS_GAINED:
+ 					// Fix for this bug: When playing back a recording, Alt+Tabbing back to SDLPoP stops the replay if Alt is released before Tab.
+ 					{ // If Alt is held down from Alt+Tab: ignore it until it's released.
