@@ -62,6 +62,10 @@ The patches, all AmigaOS only (`__amigaos__`):
 - `0003-amiga-presentation.patch`: a 320x200 screen of the game's own by
   default (SDL's real full screen), `window` for a window, the renderer in
   the log, `fps` logging the frame rate.
+- `0004-amiga-input.patch`: an input log (`SDLPOP_INPUT`), held keys
+  released when the window loses focus, the fire button as Shift and the
+  second button as jump on pads, Help for the screenshot, name entry
+  without spinning the CPU.
 
 ## Installing
 
@@ -85,6 +89,25 @@ fps` logs every second the game frames played, the screen updates and what
 an update cost (`fps game 12.0, screen 12.0, update 2.07 ms (max 3.28) at
 147.602 s`).
 
+## Controls
+
+Upstream's (`doc/Readme.txt`): the cursor keys run, jump and crouch, Shift
+with them steps carefully, grabs a ledge and fights; Escape (or Backspace)
+is the menu with quick save and settings, F6 quick-saves and F9 loads,
+Space shows the time left, Ctrl+A restarts the level, Ctrl+Q quits,
+Ctrl+Tab records a replay and Tab on the title plays them. The Amiga
+keyboard has no F12: **Help** takes upstream's screenshot
+(`PROGDIR:User/screenshots`; Shift+Help the level map).
+
+Pads, AmigaOS only: the fire button is Shift and the second button jumps,
+so a one-button stick or a CD32 pad plays it. Through GFOpenInput (SDL's
+GameController, red A, blue B) A acts as upstream's X and B as Y; through
+lowlevel.library alone (SDL_Joystick) red is X, blue Y, Play opens the
+menu, and the stick's up and down count even with
+`joystick_only_horizontal`. `SetEnv SDLPOP_INPUT RAM:input.txt` logs the
+joysticks SDL finds and every key, text, focus, joystick and pad event
+the game gets.
+
 ## Status
 
 **COMPILED**, not RELEASE (see Observed below and the release gates in
@@ -95,7 +118,10 @@ amicradle `docs/porting/MEASUREMENT.md`).
 | Pinned source, reproducible build, receipts | done (open5, Cradle) |
 | Start, info screen, title, intro, demo level, quit | done |
 | Whole 320x200 frame on a screen of its own, frame rate measured | done (12.0 game frames a second, as the game's own timer gives) |
-| Keyboard, pad, sound, saves, package, play test | not yet |
+| Level 1 keyboard controls (run, turn, careful step, jump and climb, crouch) | done |
+| Text input (a replay named), focus loss releasing held keys | done |
+| Joystick / CD32 pad | not tested: no stick in the lab (SDL opens port 2 as a game controller) |
+| Sound, saves, package, play test | not yet |
 
 ## Observed
 
@@ -179,3 +205,59 @@ information screen through the title and the intro into the demo level:
 ![The information screen on its own 320x200 screen](docs/observed/step2-info-320x200.png)
 ![The title](docs/observed/step2-title-presents.png)
 ![The intro](docs/observed/step2-cutscene-princess.png)
+
+### Controls, 3 November 2026
+
+Commit `331f1ed` adds `patches/0004-amiga-input.patch`, `7935e72` finishes
+it after the first lab run (the log's name read with `SDL_getenv`, which
+sees `SetEnv` variables where libnix's `getenv` did not; Help for the
+screenshot; name entry no longer spinning). Executable (open5, Cradle job
+`j20261103T021336-3a33f5`): SHA-256
+`50f5fc8e783b42cd2b44b9ea5ad9868ff6bdbe7c6db46896a64cd4db3761e654`
+(598,016 bytes; `receipts/3-input-open5-stove_build.json`; the first,
+`331f1ed`, job `j20261103T020857-9b633d`, in
+`receipts/3-input-331f1ed-open5-stove_build.json`).
+
+The catalogue's gate was "check the SDL2 text input/focus fix and confirm
+Level 1 keyboard controls". Earlier runs on an older SDL2 runtime typed
+nothing into Neverball's name field, and SDLPoP's movement was only tried
+while paused. In `lab:sdlpop` with gfopenrtg main's `SDL2.module`:
+
+- **Level 1 from the keyboard**, on its own screen, unpaused, with HoldKeys
+  holding the keys as a player would (`tests/lab`): Right ran the kid off
+  the starting ledge to the floor below; Left turned him and ran him back
+  under it; Up jumped, caught the ledge and climbed it; Shift+Left stepped
+  carefully to its edge; Down crouched (the picture taken with the key
+  held); Right again ran him on into the next room, where the guard killed
+  him (no sword yet: "Press Button to Continue"). The input log has every
+  press and release with its time (`key Right down` ... `key Right up`,
+  1.74 s later for a 1-second HoldKeys, its ticks being slow in the lab).
+- **Text input**: Ctrl+Tab started a replay, Ctrl+Tab stopped it and the
+  game asked for its name; `amiga1` typed through Cradle's keyboard,
+  Backspace, `2`: the field showed `amiga2_`, Return saved
+  `PROGDIR:replays/amiga2.p1r` (3,962 bytes). SDL gave the text events
+  (`text " "` beside `key Space down` in the log). Before the change the
+  name field redrew about 1,600 times a second; it now waits 10 ms a turn.
+- **Focus**: in a window (`prince window`), Right held and the Workbench
+  clicked: the log has `key Right up` and `focus lost` at the same
+  millisecond (SDL releases the keys it saw down when the window loses
+  focus), and the kid stopped behind the doorway's pillar instead of
+  running on into the guard's room; `focus gained` when the window was
+  clicked again, no key stuck. The patch's own release of held keys and
+  pad buttons on focus loss stays as a second guard.
+- **Screenshots**: Help printed "Saved screenshot" and wrote
+  `PROGDIR:User/screenshots/screenshot_000.png` (320x200; the pictures
+  below are those files).
+- Frames: 12.0 game frames a second in every reading of play, an update
+  0.8 to 1.5 ms on average.
+
+![Climbing back onto the ledge](docs/observed/step3-climb-help.png)
+![Running on the lower floor](docs/observed/step3-running-lower.png)
+![The guard in the next room](docs/observed/step3-guard.png)
+
+Joystick and CD32 pad: not qualified. The lab has no stick: JoyPort reports
+lowlevel.library's port 1 (game port 2) as `none`. SDL lists `joystick 0:
+"Amiga joystick port (2): joystick", game controller` (GFOpenInput's
+layout) and the game takes it through SDL_GameController; no stick or pad
+event was made. The mapping (fire as Shift, second button jump, Play the
+menu) is untested; a person with a stick or a CD32 pad has to try it.
