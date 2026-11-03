@@ -1,0 +1,9 @@
+{
+  "upstream_commit": "3c5add5fb7f83d4ceb542823ab66d00146c4271b",
+  "files": 1034,
+  "sha256sums_sha256": "52ddae82f4c6e34023d25500910008975bd5b8886469684da8d7a6f8790528d1",
+  "archive_sha256": "510b70e5fa6e87cef54d44d6bf07ed4e07c48fd9c1c335d671e3c0da82655cb0",
+  "archive_bytes": 1269760,
+  "untar_sha256": "2de6090b9ef982dd1137e2e596da348fde51d09bf76b9ef11c604bbac86c7b6d",
+  "use": "lab tests only; the original game's data, not shipped in the package"
+}

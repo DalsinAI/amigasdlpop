@@ -1,0 +1,219 @@
+diff --git a/SDLPoP.ini b/SDLPoP.ini
+index acfca1b..d017fa0 100644
+--- a/SDLPoP.ini
++++ b/SDLPoP.ini
+@@ -38,7 +38,8 @@ enable_text = true
+ enable_info_screen = true;
+ 
+ ; Start the game in fullscreen mode. (In-game fullscreen toggle: Alt+Enter)
+-start_fullscreen = false
++; AmigaOS: true, a 320x200 screen of the game's own; "prince window" overrides it.
++start_fullscreen = true
+ 
+ ; Width and height of the game window.
+ ; By default, the window is 640 pixels wide and 400 pixels tall.
+diff --git a/src/common.h b/src/common.h
+index aa101b7..bcde6c1 100644
+--- a/src/common.h
++++ b/src/common.h
+@@ -67,6 +67,14 @@ extern "C" {
+ #include "proto.h"
+ #include "data.h"
+ 
++#ifdef __amigaos__
++// AmigaOS: SDL's real full screen, a screen of the game's own 320x200 (GFOpenGPU's
++// SDL2.module opens one), not the desktop-sized one every frame would be scaled to
++#define POP_WINDOW_FULLSCREEN SDL_WINDOW_FULLSCREEN
++#else
++#define POP_WINDOW_FULLSCREEN SDL_WINDOW_FULLSCREEN_DESKTOP
++#endif
++
+ #ifndef MAX
+ #define MAX(a,b) ((a)>(b)?(a):(b))
+ #endif
+diff --git a/src/data.h b/src/data.h
+index e1e10f5..5dd1b38 100644
+--- a/src/data.h
++++ b/src/data.h
+@@ -715,6 +715,10 @@ extern dword curr_tick INIT(= 0);
+ extern byte start_fullscreen INIT(= 1);
+ extern word pop_window_width INIT(= 480);
+ extern word pop_window_height INIT(= 272);
++#elif defined(__amigaos__)
++extern byte start_fullscreen INIT(= 1);
++extern word pop_window_width INIT(= 640);
++extern word pop_window_height INIT(= 400);
+ #else
+ extern byte start_fullscreen INIT(= 0);
+ extern word pop_window_width INIT(= 640);
+diff --git a/src/menu.c b/src/menu.c
+index 6cf386d..30e5f02 100644
+--- a/src/menu.c
++++ b/src/menu.c
+@@ -1395,7 +1395,7 @@ void turn_setting_on_off(int setting_id, byte new_state, void* linked) {
+ 			break;
+ 		case SETTING_FULLSCREEN:
+ 			start_fullscreen = new_state;
+-			SDL_SetWindowFullscreen(window_, (new_state != 0) * SDL_WINDOW_FULLSCREEN_DESKTOP);
++			SDL_SetWindowFullscreen(window_, (new_state != 0) * POP_WINDOW_FULLSCREEN);
+ 			break;
+ 		case SETTING_USE_CORRECT_ASPECT_RATIO:
+ 			use_correct_aspect_ratio = new_state;
+diff --git a/src/options.c b/src/options.c
+index f4a0a1a..53a8b4a 100644
+--- a/src/options.c
++++ b/src/options.c
+@@ -487,7 +487,11 @@ void set_options_to_default() {
+ 	enable_flash = 1;
+ 	enable_text = 1;
+ 	enable_info_screen = 1;
++#ifdef __amigaos__
++	start_fullscreen = 1; // a screen of its own
++#else
+ 	start_fullscreen = 0;
++#endif
+ 	use_hardware_acceleration = 2;
+ 	use_correct_aspect_ratio = 0;
+ 	use_integer_scaling = 0;
+diff --git a/src/seg000.c b/src/seg000.c
+index 6b13772..778ea1a 100644
+--- a/src/seg000.c
++++ b/src/seg000.c
+@@ -860,7 +860,13 @@ int process_key() {
+ }
+ 
+ // seg000:08EB
++#ifdef __amigaos__
++extern dword amiga_game_frames; // seg009.c, the "fps" log
++#endif
+ void play_frame() {
++#ifdef __amigaos__
++	++amiga_game_frames;
++#endif
+ 	// play feather fall music if there is more than 1 second of feather fall left
+ 	if (fixes->fix_quicksave_during_feather && is_feather_fall >= 10 && !check_sound_playing()) {
+ 		play_sound(sound_39_low_weight);
+diff --git a/src/seg009.c b/src/seg009.c
+index 1a361b6..f580824 100644
+--- a/src/seg009.c
++++ b/src/seg009.c
+@@ -2586,9 +2586,23 @@ void set_gr_mode(byte grmode) {
+ 	//SDL_EnableUNICODE(1); //deprecated
+ 	Uint32 flags = 0;
+ 	if (!start_fullscreen) start_fullscreen = check_param("full") != NULL;
++#ifdef __amigaos__
++	// AmigaOS: "window" for a window on the Workbench whatever SDLPoP.ini says;
++	// full screen is a 320x200 screen of the game's own, its frame unscaled
++	if (check_param("window") != NULL) start_fullscreen = 0;
++	int amiga_window_width = pop_window_width, amiga_window_height = pop_window_height;
++	if (start_fullscreen) {
++		flags |= POP_WINDOW_FULLSCREEN;
++		amiga_window_width = 320;
++		amiga_window_height = 200;
++	} else {
++		flags |= SDL_WINDOW_RESIZABLE;
++	}
++#else
+ 	if (start_fullscreen) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+ 	flags |= SDL_WINDOW_RESIZABLE;
+ 	flags |= SDL_WINDOW_ALLOW_HIGHDPI; // for Retina displays
++#endif
+ 
+ 	// Should use different default window dimensions when using 4:3 aspect ratio
+ 	if (use_correct_aspect_ratio && pop_window_width == 640 && pop_window_height == 400) {
+@@ -2612,9 +2626,15 @@ void set_gr_mode(byte grmode) {
+ #ifdef USE_REPLAY
+ 	if (!is_validate_mode) // run without a window if validating a replay
+ #endif
++#ifdef __amigaos__
++	window_ = SDL_CreateWindow(WINDOW_TITLE,
++	                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
++	                           amiga_window_width, amiga_window_height, flags);
++#else
+ 	window_ = SDL_CreateWindow(WINDOW_TITLE,
+ 	                           SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
+ 	                           pop_window_width, pop_window_height, flags);
++#endif
+ 	// Make absolutely sure that VSync will be off, to prevent timer issues.
+ 	SDL_SetHint(SDL_HINT_RENDER_VSYNC, "0");
+ 	flags = 0;
+@@ -2631,6 +2651,17 @@ void set_gr_mode(byte grmode) {
+ 		if (renderer_info.flags & SDL_RENDERER_TARGETTEXTURE) {
+ 			is_renderer_targettexture_supported = true;
+ 		}
++#ifdef __amigaos__
++		if (window_ != NULL) {
++			int w, h, ow = 0, oh = 0;
++			SDL_GetWindowSize(window_, &w, &h);
++			SDL_GetRendererOutputSize(renderer_, &ow, &oh);
++			printf("SDL renderer \"%s\" (flags 0x%x), %s %dx%d, output %dx%d\n",
++			       renderer_info.name, (unsigned)renderer_info.flags,
++			       (SDL_GetWindowFlags(window_) & SDL_WINDOW_FULLSCREEN) ? "full screen" : "window",
++			       w, h, ow, oh);
++		}
++#endif
+ 	}
+ 	if (use_integer_scaling) {
+ #if SDL_VERSION_ATLEAST(2,0,5) // SDL_RenderSetIntegerScale
+@@ -2775,7 +2806,42 @@ void draw_overlay(void) {
+ 	}
+ }
+ 
++#ifdef __amigaos__
++// AmigaOS, with the "fps" option: every second, how many game frames were
++// played (play_frame, seg000.c) and how many times the screen was updated,
++// and what an update cost
++dword amiga_game_frames;
++static int amiga_fps_log = -1;
++static dword amiga_updates;
++static Uint64 amiga_update_counts, amiga_update_max, amiga_log_from;
++
++static void amiga_frame_log(Uint64 started) {
++	Uint64 now = SDL_GetPerformanceCounter();
++	Uint64 spent = now - started;
++	Uint64 freq = SDL_GetPerformanceFrequency();
++	++amiga_updates;
++	amiga_update_counts += spent;
++	if (spent > amiga_update_max) amiga_update_max = spent;
++	if (amiga_log_from == 0) amiga_log_from = now;
++	if (now - amiga_log_from >= freq) {
++		double secs = (double)(now - amiga_log_from) / freq;
++		printf("fps game %.1f, screen %.1f, update %.2f ms (max %.2f) at %.3f s\n",
++		       amiga_game_frames / secs, amiga_updates / secs,
++		       1000.0 * amiga_update_counts / freq / amiga_updates,
++		       1000.0 * amiga_update_max / freq, SDL_GetTicks() / 1000.0);
++		fflush(stdout);
++		amiga_game_frames = amiga_updates = 0;
++		amiga_update_counts = amiga_update_max = 0;
++		amiga_log_from = now;
++	}
++}
++#endif
++
+ void update_screen() {
++#ifdef __amigaos__
++	if (amiga_fps_log < 0) amiga_fps_log = check_param("fps") != NULL;
++	Uint64 amiga_started = amiga_fps_log ? SDL_GetPerformanceCounter() : 0;
++#endif
+ 	draw_overlay();
+ 	SDL_Surface* surface = get_final_surface();
+ 	init_scaling();
+@@ -2802,6 +2868,9 @@ void update_screen() {
+ 	SDL_RenderClear(renderer_);
+ 	SDL_RenderCopy(renderer_, target_texture, NULL, NULL);
+ 	SDL_RenderPresent(renderer_);
++#ifdef __amigaos__
++	if (amiga_fps_log) amiga_frame_log(amiga_started);
++#endif
+ }
+ 
+ // seg009:9289
+@@ -3430,7 +3499,7 @@ void toggle_fullscreen(void) {
+ 		SDL_ShowCursor(SDL_ENABLE);
+ 	}
+ 	else {
+-		SDL_SetWindowFullscreen(window_, SDL_WINDOW_FULLSCREEN_DESKTOP);
++		SDL_SetWindowFullscreen(window_, POP_WINDOW_FULLSCREEN);
+ 		SDL_ShowCursor(SDL_DISABLE);
+ 	}
+ }
