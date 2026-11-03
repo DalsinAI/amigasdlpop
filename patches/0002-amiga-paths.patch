@@ -15,10 +15,10 @@ index ab5b488..488566a 100644
  #endif
  
 diff --git a/src/main.c b/src/main.c
-index 7779c88..c83cd74 100644
+index 7779c88..75048ae 100644
 --- a/src/main.c
 +++ b/src/main.c
-@@ -33,10 +33,30 @@ static const char stack[] = "$STACK:200000";
+@@ -33,10 +33,36 @@ static const char stack[] = "$STACK:200000";
  #include <psppower.h>
  #endif
  
@@ -35,8 +35,9 @@ index 7779c88..c83cd74 100644
 +	 * AmigaOS: the files beside the program are found in the current
 +	 * directory (PROGDIR:, set above), and argv[0] is the command as typed,
 +	 * which need not name the program from there. The executable's own
-+	 * checksum (SDLPoP.cfg, menu.c) reads argv[0], so it becomes
-+	 * PROGDIR:NAME.
++	 * checksum (SDLPoP.cfg, menu.c) reads argv[0], so the game gets a
++	 * copy of the arguments with PROGDIR:NAME first. (libnix frees the
++	 * strings of its own argv at exit: they are left as they are.)
 +	 */
 +	if (argc >= 1 && argv[0] != NULL) {
 +		const char* name = argv[0];
@@ -44,7 +45,12 @@ index 7779c88..c83cd74 100644
 +			if (*p == '/' || *p == ':') name = p + 1;
 +		}
 +		snprintf(amiga_self, sizeof(amiga_self), "PROGDIR:%s", name);
-+		argv[0] = amiga_self;
++		char** amiga_argv = calloc(argc + 1, sizeof(char*));
++		if (amiga_argv != NULL) {
++			for (int i = 1; i < argc; ++i) amiga_argv[i] = argv[i];
++			amiga_argv[0] = amiga_self;
++			argv = amiga_argv;
++		}
 +	}
  #endif
  	#ifdef __PSP__
