@@ -1,0 +1,94 @@
+diff --git a/src/seg009.c b/src/seg009.c
+index 07ceb0c..4a5df33 100644
+--- a/src/seg009.c
++++ b/src/seg009.c
+@@ -2108,6 +2108,11 @@ void ogg_callback(void *userdata, Uint8 *stream, int len) {
+ int audio_speed = 1; // =1 normally, >1 during fast forwarding
+ #endif
+ 
++#ifdef __amigaos__
++// AmigaOS: upstream's callback is timed by the one below (the "fps" log)
++#define audio_callback audio_callback_mix
++static
++#endif
+ void audio_callback(void* userdata, Uint8* stream_orig, int len_orig) {
+ 
+ 	Uint8* stream;
+@@ -2177,6 +2182,51 @@ void audio_callback(void* userdata, Uint8* stream_orig, int len_orig) {
+ 
+ }
+ 
++#ifdef __amigaos__
++#undef audio_callback
++/*
++ * AmigaOS, with the "fps" option: every five seconds, how many buffers the
++ * mixer filled, how many of those callbacks came more than half a buffer
++ * late (SDL's AHI driver asks for the next buffer as the last one starts
++ * playing), and the time the mixing took (sound effects, the OPL3 music
++ * synthesis of midi.c, Ogg music when there is any).
++ */
++static volatile dword amiga_audio_buffers, amiga_audio_late;
++static volatile Uint64 amiga_audio_mix, amiga_audio_mix_max, amiga_audio_last;
++
++void audio_callback(void* userdata, Uint8* stream, int len) {
++	Uint64 freq = SDL_GetPerformanceFrequency();
++	Uint64 start = SDL_GetPerformanceCounter();
++	if (digi_audiospec != NULL && amiga_audio_last != 0) {
++		int frame_bytes = digi_audiospec->channels * (SDL_AUDIO_BITSIZE(digi_audiospec->format) / 8);
++		double buffer_s = (double)len / frame_bytes / digi_audiospec->freq;
++		if ((double)(start - amiga_audio_last) / freq > buffer_s * 1.5) ++amiga_audio_late;
++	}
++	amiga_audio_last = start;
++	audio_callback_mix(userdata, stream, len);
++	Uint64 spent = SDL_GetPerformanceCounter() - start;
++	amiga_audio_mix += spent;
++	if (spent > amiga_audio_mix_max) amiga_audio_mix_max = spent;
++	++amiga_audio_buffers;
++}
++
++// from the main thread (the "fps" log): the counts so far, then from zero
++void amiga_audio_log(void) {
++	if (digi_audiospec == NULL) return;
++	SDL_LockAudio();
++	dword buffers = amiga_audio_buffers, late = amiga_audio_late;
++	Uint64 mix = amiga_audio_mix, mix_max = amiga_audio_mix_max;
++	amiga_audio_buffers = amiga_audio_late = 0;
++	amiga_audio_mix = amiga_audio_mix_max = 0;
++	SDL_UnlockAudio();
++	double f = (double)SDL_GetPerformanceFrequency();
++	printf("audio %u buffers, %u late, mixing %.2f ms a buffer (max %.2f) at %.3f s\n",
++	       (unsigned)buffers, (unsigned)late, buffers ? 1000.0 * mix / f / buffers : 0.0,
++	       1000.0 * mix_max / f, SDL_GetTicks() / 1000.0);
++	fflush(stdout);
++}
++#endif
++
+ int digi_unavailable = 0;
+ void init_digi() {
+ 	if (digi_unavailable) return;
+@@ -2215,6 +2265,12 @@ void init_digi() {
+ 	}
+ 	//SDL_PauseAudio(0);
+ 	digi_audiospec = desired;
++#ifdef __amigaos__
++	printf("SDL audio \"%s\": %d Hz, %d channels, %d samples a buffer, format 0x%04x\n",
++	       SDL_GetCurrentAudioDriver() ? SDL_GetCurrentAudioDriver() : "?", desired->freq,
++	       desired->channels, desired->samples, (unsigned)desired->format);
++	fflush(stdout);
++#endif
+ }
+ 
+ const int sound_channel = 0;
+@@ -2846,6 +2902,12 @@ static void amiga_frame_log(Uint64 started) {
+ 		amiga_game_frames = amiga_updates = 0;
+ 		amiga_update_counts = amiga_update_max = 0;
+ 		amiga_log_from = now;
++		static int amiga_audio_every;
++		if (++amiga_audio_every >= 5) {
++			extern void amiga_audio_log(void);
++			amiga_audio_every = 0;
++			amiga_audio_log();
++		}
+ 	}
+ }
+ #endif
