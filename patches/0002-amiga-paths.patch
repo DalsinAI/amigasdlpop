@@ -1,0 +1,156 @@
+diff --git a/src/config.h b/src/config.h
+index ab5b488..488566a 100644
+--- a/src/config.h
++++ b/src/config.h
+@@ -35,6 +35,11 @@ The authors of this program may be contacted at https://forum.princed.org
+ 
+ #if ! (defined WIN32 || _WIN32 || WIN64 || _WIN64)
+ #define POP_DIR_NAME "SDLPoP"
++#ifdef __amigaos__
++// AmigaOS: settings, saves, the hall of fame and screenshots go here,
++// relative to the program's drawer (PROGDIR:User)
++#define AMIGA_USER_DIR "User"
++#endif
+ #define SHARE_PATH "/usr/share"
+ #endif
+ 
+diff --git a/src/main.c b/src/main.c
+index 7779c88..c83cd74 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -33,10 +33,30 @@ static const char stack[] = "$STACK:200000";
+ #include <psppower.h>
+ #endif
+ 
++#ifdef __amigaos__
++__attribute__((used)) static const char amiga_version[] = "$VER: SDLPoP " SDLPOP_VERSION " (AmiCradle, 68040+FPU)";
++static char amiga_self[POP_MAX_PATH];
++#endif
++
+ int main(int argc, char *argv[])
+ {
+ #ifdef __amigaos__
+ 	chdir("PROGDIR:");
++	/*
++	 * AmigaOS: the files beside the program are found in the current
++	 * directory (PROGDIR:, set above), and argv[0] is the command as typed,
++	 * which need not name the program from there. The executable's own
++	 * checksum (SDLPoP.cfg, menu.c) reads argv[0], so it becomes
++	 * PROGDIR:NAME.
++	 */
++	if (argc >= 1 && argv[0] != NULL) {
++		const char* name = argv[0];
++		for (const char* p = argv[0]; *p; ++p) {
++			if (*p == '/' || *p == ':') name = p + 1;
++		}
++		snprintf(amiga_self, sizeof(amiga_self), "PROGDIR:%s", name);
++		argv[0] = amiga_self;
++	}
+ #endif
+ 	#ifdef __PSP__
+ 	scePowerSetClockFrequency(333,333,166);
+diff --git a/src/menu.c b/src/menu.c
+index 469fd13..6cf386d 100644
+--- a/src/menu.c
++++ b/src/menu.c
+@@ -2424,7 +2424,11 @@ void load_ingame_settings(void) {
+ 	// We want the SDLPoP.cfg file (in-game menu settings) to override the SDLPoP.ini file,
+ 	// but ONLY if the .ini file wasn't modified since the last time the .cfg file was saved!
+ 	struct stat st_ini, st_cfg;
++#ifdef __amigaos__
++	const char* cfg_filename = locate_save_file("SDLPoP.cfg"); // PROGDIR:User, where it is saved
++#else
+ 	const char* cfg_filename = locate_file("SDLPoP.cfg");
++#endif
+ 	const char* ini_filename = locate_file("SDLPoP.ini");
+ 	if (stat( cfg_filename, &st_cfg ) == 0 && stat( ini_filename, &st_ini ) == 0) {
+ 		if (st_ini.st_mtime > st_cfg.st_mtime ) {
+diff --git a/src/options.c b/src/options.c
+index a9508a2..f4a0a1a 100644
+--- a/src/options.c
++++ b/src/options.c
+@@ -70,8 +70,17 @@ int ini_load(const char *filename,
+ 				*s = 0;
+ 			report(section, name, value);
+ 		}
++#ifdef __amigaos__
++		// libnix's fscanf gives EOF, not 0, when the file ends in a
++		// format with nothing to convert: that is the end, not an error.
++		int r1 = fscanf(f, " ;%*[^\n]");
++		int r2 = (r1 == EOF) ? EOF : fscanf(f, " \n");
++		if (r1 == EOF || r2 == EOF) break;
++		if (r1 != 0 || r2 != 0) {
++#else
+ 		if (fscanf(f, " ;%*[^\n]") != 0 ||
+ 		    fscanf(f, " \n") != 0) {
++#endif
+ 			fprintf(stderr, "short read from %s!?\n", filename);
+ 			fclose(f);
+ 			return -1;
+diff --git a/src/screenshot.c b/src/screenshot.c
+index a3bb596..0dc9471 100644
+--- a/src/screenshot.c
++++ b/src/screenshot.c
+@@ -29,7 +29,11 @@ int screenshot_index = 0;
+ // Use incrementing numbers and a separate folder, like DOSBox.
+ void make_screenshot_filename(void) {
+ 	// Create the screenshots directory in SDLPoP's directory, even if the current directory is something else.
++#ifdef __amigaos__
++	snprintf_check(screenshots_folder, sizeof(screenshots_folder), "%s", locate_save_file("screenshots")); // PROGDIR:User/screenshots
++#else
+ 	snprintf_check(screenshots_folder, sizeof(screenshots_folder), "%s", locate_file("screenshots"));
++#endif
+ 	// Create the folder if it doesn't exist yet:
+ #if defined WIN32 || _WIN32 || WIN64 || _WIN64
+ 	mkdir (screenshots_folder);
+diff --git a/src/seg000.c b/src/seg000.c
+index 3701636..6b13772 100644
+--- a/src/seg000.c
++++ b/src/seg000.c
+@@ -2478,8 +2478,15 @@ const char* get_writable_file_path(char* custom_path_buffer, size_t max_len, con
+ 	const char* home_path = getenv("HOME");
+ 	if (custom_save_path != NULL && custom_save_path[0] != '\0')
+ 		snprintf_check(save_path, max_len, "%s", custom_save_path);
++#ifdef __amigaos__
++	// AmigaOS: PROGDIR:User, whether HOME is set or not
++	else
++		snprintf_check(save_path, max_len, "%s", AMIGA_USER_DIR);
++	(void)home_path;
++#else
+ 	else if (home_path != NULL && home_path[0] != '\0')
+ 		snprintf_check(save_path, max_len, "%s/.%s", home_path, POP_DIR_NAME);
++#endif
+ #endif
+ 
+ 	if (save_path != NULL && save_path[0] != '\0') {
+diff --git a/src/seg009.c b/src/seg009.c
+index a6c496e..1a361b6 100644
+--- a/src/seg009.c
++++ b/src/seg009.c
+@@ -99,6 +99,12 @@ bool file_exists(const char* filename) {
+ }
+ 
+ const char* find_first_file_match(char* dst, int size, char* format, const char* filename) {
++#ifdef __amigaos__
++	// AmigaOS: the program's drawer is the current directory (main.c), and
++	// "DIR/NAME" would not do for it: "PROGDIR:/NAME" is the parent drawer.
++	snprintf_check(dst, size, "%s", filename);
++	return (const char*) dst;
++#endif
+ 	find_exe_dir();
+ #if defined WIN32 || _WIN32 || WIN64 || _WIN64
+ 	snprintf_check(dst, size, format, exe_dir, filename);
+@@ -116,6 +122,13 @@ const char* find_first_file_match(char* dst, int size, char* format, const char*
+ }
+ 
+ const char* locate_save_file_(const char* filename, char* dst, int size) {
++#ifdef __amigaos__
++	// AmigaOS: what the game writes goes in the drawer User beside the
++	// program (PROGDIR:User), made when it is first needed.
++	mkdir(AMIGA_USER_DIR, 0700);
++	snprintf_check(dst, size, "%s/%s", AMIGA_USER_DIR, filename);
++	return (const char*) dst;
++#endif
+ 	find_exe_dir();
+ #if defined WIN32 || _WIN32 || WIN64 || _WIN64
+ 	snprintf_check(dst, size, "%s/%s", exe_dir, filename);
