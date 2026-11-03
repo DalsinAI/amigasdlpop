@@ -1,0 +1,38 @@
+diff --git a/src/main.c b/src/main.c
+index 75048ae..d384246 100644
+--- a/src/main.c
++++ b/src/main.c
+@@ -34,6 +34,11 @@ static const char stack[] = "$STACK:200000";
+ #endif
+ 
+ #ifdef __amigaos__
++// SDL's own log lines, to the game's stderr (NIL: from Workbench)
++static void SDLCALL amiga_sdl_log(void* userdata, int category, SDL_LogPriority priority, const char* message) {
++	fprintf(stderr, "%s\n", message);
++}
++
+ __attribute__((used)) static const char amiga_version[] = "$VER: SDLPoP " SDLPOP_VERSION " (AmiCradle, 68040+FPU)";
+ static char amiga_self[POP_MAX_PATH];
+ #endif
+@@ -42,6 +47,21 @@ int main(int argc, char *argv[])
+ {
+ #ifdef __amigaos__
+ 	chdir("PROGDIR:");
++	/*
++	 * Started from its Workbench icon, libnix gives argc 0 and the
++	 * WBStartup message in argv, and the game would read the message as
++	 * its arguments. It starts as from a Shell with no options. Its log and
++	 * SDL's go to NIL:, so no console window opens beside the game for
++	 * them.
++	 */
++	static char* amiga_wb_argv[] = { (char*)"prince", NULL };
++	if (argc < 1) {
++		argc = 1;
++		argv = amiga_wb_argv;
++		freopen("NIL:", "w", stdout);
++		freopen("NIL:", "w", stderr);
++		SDL_LogSetOutputFunction(amiga_sdl_log, NULL);
++	}
+ 	/*
+ 	 * AmigaOS: the files beside the program are found in the current
+ 	 * directory (PROGDIR:, set above), and argv[0] is the command as typed,

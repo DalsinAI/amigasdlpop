@@ -1,0 +1,10 @@
+{
+  "about": "The Workbench icons of the SDLPoP drawer: python3 AMICRADLE/scripts/port_icons.py icons/icons.json --out icons (DalsinAI/amicradle). The art is SDLPoP's own program icon (upstream src/icon.ico at the pinned commit, its 32x32 picture; the same as data/icon.png, the window icon), GPL-3.0-or-later with the engine.",
+  "drawer": {"name": "SDLPoP"},
+  "badge": "art/sdlpop.png",
+  "icons": [
+    {"file": "prince.info", "kind": "tool", "stack": 262144},
+    {"file": "ReadMe.info", "kind": "readme"},
+    {"file": "COPYING.txt.info", "kind": "readme"}
+  ]
+}

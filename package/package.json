@@ -1,0 +1,24 @@
+{
+  "drawer": "SDLPoP",
+  "drawer_icon": "icons/SDLPoP.info",
+  "archive": "sdlpop-{version}-68040",
+  "members": [
+    {"name": "prince", "build": "SDLPoP/prince", "check": "executable_sha256"},
+    {"name": "prince.info", "repo": "icons/prince.info"},
+    {"name": "SDLPoP.ini", "build": "SDLPoP/SDLPoP.ini", "check": "settings_sha256"},
+    {"name": "ReadMe", "readme": "package/ReadMe.in"},
+    {"name": "ReadMe.info", "repo": "icons/ReadMe.info"},
+    {"name": "COPYING.txt", "build": "SDLPoP/COPYING"},
+    {"name": "COPYING.txt.info", "repo": "icons/COPYING.txt.info"},
+    {"name": "data/ReadMe.txt", "repo": "package/data-ReadMe.txt"}
+  ],
+  "aminet": [
+    ["Short", "SDLPoP: Prince of Persia port, 68040+FPU"],
+    ["Author", "SDLPoP: David Nagy (NagyD) and contributors; port: AmiCradle Team"],
+    ["Uploader", "AmiCradle Team"],
+    ["Type", "game/jump"],
+    ["Version", "{version}"],
+    ["Requires", "AmigaOS 3.2, 68040/68060 with FPU, GFOpenGPU SDL2, AHI, Prince of Persia data"],
+    ["Architecture", "m68k-amigaos >= 3.2"]
+  ]
+}
