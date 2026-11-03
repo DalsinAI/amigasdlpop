@@ -1,0 +1,37 @@
+{
+  "upstream_commit": "3c5add5fb7f83d4ceb542823ab66d00146c4271b",
+  "repository_commit": "479d109e0ef4c2663f1f2ae382ff65fc929a9a89",
+  "source_date_epoch": "1766575481",
+  "recipe": {
+    "build-amiga.sh": "9fcfd52a4e8e0cb72bff41a6ae8992569699213d94d613fc8eba6fcf80aaad08"
+  },
+  "patches": {
+    "0001-amigaos3-opengpu.patch": "2a88326753bc2740078c96e045071aecbed17377db76fa00d9696220767ca611",
+    "0002-amiga-paths.patch": "931b35bf6f520ccb62e3bc9f1459ff3188096e18af51479716baa31c7c800db5",
+    "0003-amiga-presentation.patch": "8f9ff5288a229a2b6682f314931ea489f1397c597085aa666b1aa61998bd2c62",
+    "0004-amiga-input.patch": "bed6121d509dac413603d991f7849afee1c76c0b4975c2f78ce2548ea45a48c2",
+    "0005-amiga-sound.patch": "312be133a61b780402a10f73159d7c0b080af9b2ef0db20e7c12a589769bf64a",
+    "0006-amiga-saves.patch": "c6a4a971a2a4776f37c7d5830d2d3299061b67d9988b3184f37f0106b9a1ca37",
+    "0007-amiga-workbench.patch": "bd713a63f04eb885974e0820600931b18c771fa53aae726e6581ee4258ebe7e4"
+  },
+  "compiler_release": "16.2.0-open5",
+  "compiler_archive_sha256": "unpublished",
+  "sdk_inputs": {
+    "lib/libSDL2.a": "215d6ea9a61c690274596009ae5e7c4d1c2b3ba8f0a70129d6557abdf4230397",
+    "lib/libSDL2_image.a": "758b8ecda0620688f2745b73deef9611e80f999341232b01618a42383da35da6",
+    "lib/libGL.a": "922247c40ca2aceda1f5a0e4517e5a4e0a7bc16b056e659235ccde0b839f6d39",
+    "include/SDL2/SDL.h": "952e89e1dc4e0dd1a7bea6a153df632b8cdb6e433a9b3b0702c5ffe15b9b9360",
+    "include/SDL2/SDL_image.h": "f72b0187df3b81109d0a561db0fbde3f1be1ee10f30552a9fd4756ae11bcf7fd"
+  },
+  "network": "upstream source fetch only (pinned commit)",
+  "executable_sha256": "f596236224513b47b1d805e31f9cbf67c6ae398f3ab6e78d7351cb300a91280b",
+  "executable_bytes": 599360,
+  "settings_sha256": "78c1c828b22e2e2c5df263402c07b1bdb42beca06e717c166a5b4e5a2139a04f",
+  "scope": "Source build only; no game data; no runtime or release pass implied",
+  "compiler_files_sha256": {
+    "bin/m68k-amigaos-gcc": "b20d61e9dcd2defe093c0f562e96611e6f5ae3cb0588cf1063463fd913f189f6",
+    "bin/m68k-amigaos-as": "c93fe82ebda280d861ca65ab68fec2d64e63c89fd327a069bcf1c5928e295c46",
+    "bin/m68k-amigaos-ld": "c55353a0e0c7c9d55574c5cbd6c633c11b4357fb078d9615582ea313b0fcdf88",
+    "libexec/gcc/m68k-amigaos/16.2.0b/cc1": "d638cf066b6751a106e779a56f20c4b3ebfa62df30a2889f4767540477334399"
+  }
+}

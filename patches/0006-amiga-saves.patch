@@ -1,0 +1,14 @@
+diff --git a/SDLPoP.ini b/SDLPoP.ini
+index d017fa0..ef12f89 100644
+--- a/SDLPoP.ini
++++ b/SDLPoP.ini
+@@ -117,7 +117,8 @@ enable_quicksave_penalty = true
+ enable_replay = true
+ 
+ ; The folder where replays will be kept.
+-replays_folder = replays
++; AmigaOS: User/replays, beside the saves, so the game writes only in its drawer User.
++replays_folder = User/replays
+ 
+ ; Darken those parts of the screen that are not near a torch.
+ enable_lighting = false

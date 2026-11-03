@@ -31,8 +31,10 @@ for the 68040 and FPU, linking the stove's `libSDL2.a` and `libSDL2_image.a`
 (GFOpenGPU's link stubs).
 
 Through Cradle (the build the lab tests use): `stove_build` with the stove
-`os32-gcc16`, target `.` for the program, `runtime-data` for the lab's game
-data and `tests/lab` for the lab tools. From a checkout, with a staged
+`os32-gcc16`, target `.` for the program, `package` for the LhA archive,
+`runtime-data` for the lab's game data and `tests/lab` for the lab tools
+(JoyPort, HoldKeys, Chop and Grab, which saves a rectangle of the screen
+as a PNG). From a checkout, with a staged
 stove:
 
 ```sh
@@ -68,15 +70,57 @@ The patches, all AmigaOS only (`__amigaos__`):
   without spinning the CPU.
 - `0005-amiga-sound.patch`: the SDL audio driver and spec in the log, and
   with `fps` the mixer's buffers, late callbacks and mixing time.
+- `0006-amiga-saves.patch`: replays in `PROGDIR:User/replays`
+  (`SDLPoP.ini`), so the game writes only in `PROGDIR:User`.
+- `0007-amiga-workbench.patch`: started from its icon, the game starts as
+  from a Shell with no options (libnix gives it the WBStartup message for
+  its arguments), and its log and SDL's go to `NIL:`, so no console
+  window opens.
+
+The package (target `package`, `package/build-amiga.sh`) builds the game
+the same way, then `tools/make_package.py` (from amigaopentyrian) makes
+`sdlpop-VERSION-68040.lha` with its `.sha256` and an Aminet-style
+`.readme`: the drawer `SDLPoP` with `prince`, `SDLPoP.ini`, `ReadMe`,
+`COPYING.txt`, their GlowIcons and `data/ReadMe.txt`, and the same drawer
+as `SDLPoP.tar` for a lab. It checks that `prince` and `SDLPoP.ini` are
+the ones the receipt names. The icons (`icons/`) are SDLPoP's own program
+icon (upstream `src/icon.ico`, 32x32) made into OS 3.5 GlowIcons by
+amicradle's `scripts/port_icons.py`:
+
+```sh
+python3 -I ../amicradle/scripts/port_icons.py icons/icons.json --out icons
+```
+
+regenerates the committed `.info` files byte for byte.
 
 ## Installing
 
-Make a drawer, for example `Work:Games/SDLPoP`, and put in it `prince`,
-`SDLPoP.ini` and `COPYING` from the build, and the game's `data/` drawer
-beside them. The program needs GFOpenGPU's `SDL2.module` and
-`SDL2_image.module` in `LIBS:GFOpenGPU/`, AHI for sound, and a 68040 or
-68060 with its FPU. From a Shell: `Stack 262144`, then `prince` in the
-drawer.
+Unpack the archive where you keep games (`lha x
+sdlpop-1.24rc-3c5add5-amigaos3-test1-68040.lha Work:Games/`): it makes the
+drawer `SDLPoP` with its icon. OS 3.2 has no `lha`; on AmiCradle,
+`SYS:Utilities/OpenCompress x sdlpop-...-68040.lha Work:Games` does the
+same (`OpenCompress t` tests it first). Put the game's `data/` drawer (the
+DAT files; see Game data) in it, over `data/ReadMe.txt`. From a build
+instead of the archive: make the drawer and put in it `prince`,
+`SDLPoP.ini` and `COPYING` and the `data/` drawer.
+
+The program needs GFOpenGPU's `SDL2.module` and `SDL2_image.module` in
+`LIBS:GFOpenGPU/`, AHI for sound, and a 68040 or 68060 with its FPU. An
+older system may have them only in `LIBS:OpenGPU/`; then the game stops at
+once with `SDL 2: this program needs LIBS:GFOpenGPU/SDL2.module
+(GFOpenGPU), which isn't installed.` (from an icon nothing appears). Make
+the drawer and copy them in:
+
+```
+MakeDir LIBS:GFOpenGPU
+Copy LIBS:OpenGPU/SDL2_image.module LIBS:GFOpenGPU/
+Copy SDL2.module LIBS:GFOpenGPU/
+Copy SDL2.module LIBS:OpenGPU/
+```
+
+with `SDL2.module` from gfopenrtg's main of 2 November 2026 or later
+(older ones have no real full screen). Double-click `prince`, or from a
+Shell: `Stack 262144`, then `prince` in the drawer.
 
 ## Running
 
@@ -112,7 +156,7 @@ the game gets.
 
 ## Status
 
-**COMPILED**, not RELEASE (see Observed below and the release gates in
+**TESTING**, not RELEASE (see Observed below and the release gates in
 amicradle `docs/porting/MEASUREMENT.md`).
 
 | Gate | State |
@@ -122,9 +166,12 @@ amicradle `docs/porting/MEASUREMENT.md`).
 | Whole 320x200 frame on a screen of its own, frame rate measured | done (12.0 game frames a second, as the game's own timer gives) |
 | Level 1 keyboard controls (run, turn, careful step, jump and climb, crouch) | done |
 | Text input (a replay named), focus loss releasing held keys | done |
-| Joystick / CD32 pad | not tested: no stick in the lab (SDL opens port 2 as a game controller) |
-| Sound | AHI opened and fed at 44.1 kHz, OPL3 music and effects mixed, late buffers rare (4 in 6,357); not heard (muted lab) |
-| Saves, package, play test | not yet |
+| Joystick / CD32 pad | not tested: no stick in the lab (SDL opens port 2 as a game controller); needs a person (For a person to check) |
+| Sound | AHI opened and fed at 44.1 kHz, OPL3 music and effects mixed, late buffers rare (4 in 6,357); not heard (muted lab; For a person to check) |
+| Quick save, saved game, settings and replays across a cold restart | done |
+| Own drawer with GlowIcons, ReadMe, start from Workbench, LhA package | done |
+| Fresh instance from the LhA alone: unpack on the Amiga, icon start, play, quick save, quit, cold restart, load | done (a new copy of Instance-32, 3 November 2026) |
+| AGA without RTG, levels after the first, a person playing for a while | not done |
 
 ## Observed
 
@@ -305,3 +352,172 @@ Labs are muted: AHI was opened and fed at the full rate, which is what a
 muted lab can show. That the music and effects sound right, and whether the
 rare late buffer while the music plays can be heard, is for a listening
 test on a real instance.
+
+### Saves: quick save, saved game, settings and replays, 3 November 2026
+
+SDLPoP keeps the in-game settings in `SDLPoP.cfg` (it overrides
+`SDLPoP.ini` while the ini is older, and is dropped when the program
+changes: it carries the executable's checksum), the quick save in
+`QUICKSAVE.SAV`, the original game's save (Ctrl+G, from level 3) in
+`PRINCE.SAV`, the hall of fame in `PRINCE.HOF` and recorded replays as
+`.p1r` files. 0002 put the first four in `PROGDIR:User`; commit `8b52ef0`
+adds `patches/0006-amiga-saves.patch`, which puts the replays there too.
+Executable (open5, Cradle job `j20261103T022540-340c41`): SHA-256
+`5bcba9f70c9b61a4aeba20e61e631a01f68cbca0a0147517d0df29b024fa1934` (the step
+4 build's: 0006 changes only `SDLPoP.ini`, now `78c1c828...`;
+`receipts/5-saves-open5-stove_build.json`).
+
+In `lab:sdlpop`, the earlier `PROGDIR:User` moved aside, so the game
+started with none:
+
+- Level 1: the kid run into the room left of the start, F6: "QUICKSAVE",
+  `User/QUICKSAVE.SAV` (3,467 bytes).
+- Escape, Settings, Visuals, "Torch shadows enabled" on, Escape: the room
+  darkened away from its torches and `User/SDLPoP.cfg` (734 bytes) was
+  written.
+- `prince megahit 3` (upstream's level select), Ctrl+G: "GAME SAVED",
+  `User/PRINCE.SAV` (8 bytes); the torch shadows were on from the first
+  frame (the settings read back). Ctrl+Tab, a few steps, Ctrl+Tab, `lvl3`,
+  Return: `User/replays/lvl3.p1r`. Nothing was written outside `User`
+  (no `PROGDIR:replays`).
+- **Across a restart:** the lab was stopped and started again (a cold
+  boot). Every file in `PROGDIR:User` was still there with its size and
+  time. `prince`, then on the title: F9 quick-loaded Level 1 in the saved
+  room with the kid where he was saved, torch shadows on; Ctrl+Q,
+  `prince` again, Ctrl+L on the title: Level 3 from `PRINCE.SAV` with no
+  level select; Ctrl+Q, `prince`, Tab on the title: the replay `lvl3`
+  played ("LEVEL 3").
+
+![Quick-saved in Level 1](docs/observed/step5-quicksave.png)
+![After the cold restart: F9 on the title, the same room, torch shadows on](docs/observed/step5-after-restart-quickload-lit.png)
+
+Not covered: the hall of fame (it needs the game won), a full disk or a
+write-protected drawer.
+
+### Package: the drawer, its icons and the start from Workbench, 3 November 2026
+
+Built by Cradle's `stove_build` of `3a06a94`, target `package` (job
+`j20261103T023514-1c0c68`, `receipts/6-package-open5-stove_build.json`):
+`sdlpop-1.24rc-3c5add5-amigaos3-test1-68040.lha`, 310,665 bytes, SHA-256
+`d0d998e2...`, nine members; `prince` 599,360 bytes, SHA-256
+`f5962362...` (0007 changes the program; `SDLPoP.ini` is step 5's).
+The archive holds `SDLPoP.info` and the drawer `SDLPoP/` with `prince`,
+`prince.info`, `SDLPoP.ini`, `ReadMe`, `ReadMe.info`, `COPYING.txt`,
+`COPYING.txt.info` and `data/ReadMe.txt`; no game data. Read back with
+`tools/lha_archive.py` (lh5 decoded, every CRC checked), a local package
+build's archive gave the same nine members byte for byte as the drawer
+it was made from.
+
+In `lab:sdlpop` there is no `lha`, so the same drawer went in from the
+job's `SDLPoP.tar` (untar) as `Work:Games/SDLPoP`, with the lab's game
+data in its `data` drawer (the earlier test drawer moved aside to
+`SDLPoP.lab`):
+
+- **Icons:** the Games window shows the drawer as a GlowIcon with the
+  game's own art as its badge; the drawer opens on `COPYING.txt`,
+  `prince` (the kid's head on the tool's gears) and `ReadMe`.
+- **From Workbench:** a double-click on `prince` opened the info screen on
+  the game's own 320x200 screen, then the title and Level 1; no console
+  window opened beside it (0007). Help wrote
+  `User/screenshots/screenshot_000.png`; Ctrl+Q went back to the
+  Workbench, the drawer as it was.
+- **ReadMe:** a double-click opened it in a text viewer (the icon's
+  default tool is `SYS:Utilities/MultiView`, which on the lab's system is
+  OpenView).
+
+![The Games drawer: SDLPoP's drawer icon](docs/observed/step6-workbench-games.png)
+![The SDLPoP drawer: the licence, the game and the ReadMe](docs/observed/step6-workbench-drawer.png)
+
+(Grabbed in the lab with `tests/lab`'s Grab as PNG: `Grab SYS:T/wb.png X Y
+W H` saves that rectangle of the frontmost screen.)
+
+Not covered: `lha x` on the Amiga (the archive was read back on Linux
+only), `COPYING.txt` opened from its icon, a Workbench with no GlowIcon
+support (OS 3.1).
+
+### Play test on a fresh instance, from the LhA alone, 3 November 2026
+
+Built by Cradle's `stove_build` of `479d109`, target `package` (job
+`j20261103T032459-07ab20`, `receipts/7-playtest-open5-stove_build.json`):
+`sdlpop-1.24rc-3c5add5-amigaos3-test1-68040.lha`, 310,666 bytes, SHA-256
+`2760680c160bba420f15d4ac2070ca5cac5e898d30086e7c12445d23f36be57a`. Its
+`prince` is step 6's (`f5962362...`); only the ReadMe changed, which now
+names the compiler GFOpenAmigaGCC.
+
+`lab:sdlpop-fresh`, a new copy of Instance-32 (AC090 JIT, RTG, muted), with
+nothing of the game on it. Put in from outside: the archive, gfopenrtg's
+`SDL2.module` (main `77fb11f`, job `j20261103T013628-da91df`), and, for
+the game data the user supplies, upstream's `data/` as the lab-only tar
+(`runtime-data`, job `j20261103T014106-460abd`) with `untar`. Then, on the
+Amiga:
+
+1. `OpenCompress t` on the archive: "9 files tested, 692580 bytes, all
+   good". `OpenCompress x` into `Work:Games`: "9 files extracted";
+   `Work:Games/SDLPoP.info` and the drawer. The unpacked `prince`,
+   `SDLPoP.ini`, `ReadMe`, `prince.info` and `SDLPoP.info` have the job's
+   SHA-256s.
+2. Before the modules were in, `prince` from a Shell stopped at once (return
+   code 20): `SDL 2: this program needs LIBS:GFOpenGPU/SDL2.module
+   (GFOpenGPU), which isn't installed.` The instance has SDL 2 only in
+   `LIBS:OpenGPU/` and no `LIBS:GFOpenGPU/`. Made as Installing says:
+   `LIBS:GFOpenGPU/` with gfopenrtg's `SDL2.module` and the instance's own
+   `SDL2_image.module`, and gfopenrtg's `SDL2.module` in `LIBS:OpenGPU/`
+   too. The data went into the drawer's `data` (1,034 files).
+3. On the Workbench: Work, Games (the SDLPoP drawer's GlowIcon), SDLPoP
+   (`COPYING.txt`, `prince` and `ReadMe` with theirs). `prince` chosen and
+   opened (Right-Amiga O): the info screen on the game's own 320x200
+   screen, no console window, then the title.
+4. Return started Level 1. Played with `tests/lab` HoldKeys: Right ran the
+   kid off the first ledge to the floor below and into the next room, Left
+   back across it. F6 showed "QUICKSAVE" and the game made `User/` with
+   `QUICKSAVE.SAV` (3,467 bytes, SHA-256 `c9b84fa9...c28a`). Left again
+   moved the kid away from where he was saved; Ctrl+Q went back to the
+   Workbench and `prince` was gone from `Status`.
+5. **Cold restart**: the lab stopped and started. `User/QUICKSAVE.SAV` had
+   the same SHA-256.
+6. From the icon again (Work, Games, SDLPoP, `prince`), Return on the info
+   screen, F9 on the title: the saved room with the kid where he was saved.
+   Beside the picture taken at the save, only the torch flames and the
+   status line differ. Ctrl+Q went back to the Workbench.
+7. `COPYING.txt` from its icon opened in OpenView (its default tool,
+   `SYS:Utilities/MultiView`). The game wrote nothing outside its drawer;
+   `User/QUICKSAVE.SAV` was all it wrote.
+
+![Work:Games on the fresh instance: the SDLPoP drawer's GlowIcon](docs/observed/step7-workbench-games.png)
+![The SDLPoP drawer as unpacked](docs/observed/step7-workbench-drawer.png)
+![The title, started from the icon](docs/observed/step7-title.png)
+![Level 1, the second room](docs/observed/step7-play.png)
+![F6: quick-saved](docs/observed/step7-quicksave.png)
+![After the cold restart, from the icon, F9 on the title](docs/observed/step7-after-restart-load.png)
+
+(The game pictures are Cradle's screenshots of the RTG head at 320x200;
+the Workbench ones are its 1920x1080 screenshots cut to the window.)
+
+This also covers what step 6 left: `lha` on the Amiga (OpenCompress) and
+`COPYING.txt` from its icon. Not covered: a Workbench with no GlowIcon
+support (OS 3.1), and the items in For a person to check.
+
+## For a person to check
+
+These need hands or ears; the lab has neither a stick nor sound.
+
+**Pad.** On an instance with a joystick or CD32 pad in port 2 (or a USB pad
+the instance's window passes to port 2):
+
+1. Install as Installing says, then open a Shell and type
+   `SetEnv SDLPOP_INPUT RAM:input.txt`.
+2. Start `prince` from its icon, press Return on the info screen and the
+   title.
+3. In Level 1, push the stick left and right (the kid runs), up (he jumps),
+   down (he crouches); hold fire and push left or right (a careful step);
+   press the second button (he jumps). On a CD32 pad press Play (the menu
+   opens; Play again closes it).
+4. Ctrl+Q, then `Type RAM:input.txt` in the Shell. It should list the pad
+   SDL found and a `pad` or `joy` line for each press. Note anything that
+   did not move the kid.
+
+**Sound.** On an instance with sound on: start `prince` from its icon and
+listen to the title music (about a minute), then play Level 1 for a few
+minutes. The music and the effects (steps, the gate, the guard's sword)
+should be clear. Note any crackle or gap, with the time and what was
+playing.
