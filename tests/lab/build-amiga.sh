@@ -5,6 +5,8 @@
 #   HoldKeys  holds keys down for a time, or in turn (Cradle's input tool
 #             only taps)
 #   Chop      cuts a file (a screenshot) into pieces small enough to fetch
+#   Grab      saves a rectangle of the frontmost screen as a PPM (Workbench
+#             pictures; Cradle's screenshot tool does not keep them)
 # All three from DalsinAI/amigakobodeluxe's tests/lab (JoyPort and HoldKeys
 # from DalsinAI/amigapowermanga's tests/, HoldKeys with CYCLE added).
 # MIT, Copyright (c) 2026 AmiCradle Team.
@@ -22,4 +24,9 @@ for t in JoyPort:joyport HoldKeys:holdkeys Chop:chop; do
     "$CC" -noixemul -m68040 -O2 -Wall -fno-delete-null-pointer-checks \
         -ffile-prefix-map="$HERE"=. -o "$OUT/${t%%:*}" "$HERE/${t#*:}.c"
 done
-sha256sum "$OUT/JoyPort" "$OUT/HoldKeys" "$OUT/Chop"
+# Grab saves PNG through GFOpenGPU's SDL2_image (the stove's link stubs)
+SDK="$STOVE/prefix/m68k-amigaos"
+"$CC" -noixemul -m68040 -O2 -Wall -fno-delete-null-pointer-checks -pthread \
+    -ffile-prefix-map="$HERE"=. -I"$SDK/include/SDL2" -o "$OUT/Grab" "$HERE/grab.c" \
+    -L"$SDK/lib" -lSDL2_image -lSDL2 -lGL -lm -pthread
+sha256sum "$OUT/JoyPort" "$OUT/HoldKeys" "$OUT/Chop" "$OUT/Grab"

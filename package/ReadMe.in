@@ -1,0 +1,62 @@
+SDLPoP @VERSION@ for AmigaOS 3.x (AmiCradle)
+=====================================================
+
+SDLPoP is the open-source port of Jordan Mechner's Prince of Persia
+(1989), made from the disassembly of the DOS game. This is its AmigaOS 3.x
+build for a 68040 or 68060 with an FPU, with SDL 2 through GFOpenGPU.
+Status: TESTING, not a release.
+
+Requirements
+------------
+
+- AmigaOS 3.2, a 68040 or 68060 with an FPU, AmiCradle or an RTG board.
+- GFOpenGPU's SDL2.module and SDL2_image.module in LIBS:GFOpenGPU/
+  (SDL2.module from gfopenrtg's main of 2 November 2026 or later, for the
+  game's own 320x200 screen).
+- AHI for sound. GFOpenInput for pads (lowlevel.library alone gives the
+  joystick port).
+- The Prince of Persia game data (not in this archive): see
+  data/ReadMe.txt.
+
+Installing
+----------
+
+Unpack the archive where you keep games (lha x sdlpop-...lha Games:),
+then put the game data in the drawer's data drawer. Settings, saves,
+replays and screenshots go to the drawer's User drawer, made on the first
+start. Nothing is written anywhere else.
+
+Playing
+-------
+
+- Double-click the prince icon, or from a Shell: Stack 262144, cd to the
+  drawer, then prince. Options: window (a window on the Workbench),
+  full, mute, fps (the frame rate and sound buffers in the log),
+  megahit N (start at level N, with cheats).
+- The game starts on a 320x200 screen of its own. Alt+Return switches to
+  a window and back. SDLPoP.ini holds the rest of the settings; the menu
+  (Escape) changes most of them in the game.
+- Keys: the cursor keys run, jump and crouch; Shift with them steps
+  carefully, grabs a ledge and fights. Escape is the menu, F6 quick-saves
+  and F9 loads, Space shows the time left, Ctrl+A restarts the level,
+  Ctrl+G saves the game (from level 3; Ctrl+L on the title loads it),
+  Ctrl+Q quits. Help takes a screenshot (the Amiga has no F12).
+- Pads: the fire button is Shift and the second button jumps; the d-pad
+  or stick moves. A CD32 pad's Play opens the menu.
+
+Licence
+-------
+
+SDLPoP is GPL-3.0-or-later (COPYING.txt); its source is at
+https://github.com/NagyD/SDLPoP. The Prince of Persia data is the
+original game's and is not part of this archive. The icons are drawn
+from SDLPoP's own program icon.
+
+Build
+-----
+
+Engine commit @UPSTREAM_COMMIT@,
+built with GFOpenAmigaGCC @COMPILER_RELEASE@. The program's SHA-256:
+@EXECUTABLE_SHA256@
+
+Port: the AmiCradle Team, https://github.com/DalsinAI/amigasdlpop
