@@ -66,6 +66,8 @@ The patches, all AmigaOS only (`__amigaos__`):
   released when the window loses focus, the fire button as Shift and the
   second button as jump on pads, Help for the screenshot, name entry
   without spinning the CPU.
+- `0005-amiga-sound.patch`: the SDL audio driver and spec in the log, and
+  with `fps` the mixer's buffers, late callbacks and mixing time.
 
 ## Installing
 
@@ -121,7 +123,8 @@ amicradle `docs/porting/MEASUREMENT.md`).
 | Level 1 keyboard controls (run, turn, careful step, jump and climb, crouch) | done |
 | Text input (a replay named), focus loss releasing held keys | done |
 | Joystick / CD32 pad | not tested: no stick in the lab (SDL opens port 2 as a game controller) |
-| Sound, saves, package, play test | not yet |
+| Sound | AHI opened and fed at 44.1 kHz, OPL3 music and effects mixed, late buffers rare (4 in 6,357); not heard (muted lab) |
+| Saves, package, play test | not yet |
 
 ## Observed
 
@@ -261,3 +264,44 @@ lowlevel.library's port 1 (game port 2) as `none`. SDL lists `joystick 0:
 layout) and the game takes it through SDL_GameController; no stick or pad
 event was made. The mapping (fire as Shift, second button jump, Play the
 menu) is untested; a person with a stick or a CD32 pad has to try it.
+
+### Sound, 3 November 2026
+
+Commit `cf04fb9` adds `patches/0005-amiga-sound.patch`: upstream's mixer is
+unchanged. It mixes the digitised sound effects and, for the music, plays
+the game's own MIDI scores through `opl3.c` (an emulated OPL3 FM chip,
+Nuked OPL3), all in software on SDL's audio callback (Ogg music only if
+the user adds files to `data/music`; none here). On AmigaOS the patch logs
+the audio spec, and with `fps` it logs every five seconds the buffers
+filled, the callbacks that came more than half a buffer late and the
+mixing time. Executable (open5, Cradle job `j20261103T022000-7e4ad6`):
+SHA-256 `5bcba9f70c9b61a4aeba20e61e631a01f68cbca0a0147517d0df29b024fa1934`
+(599,148 bytes; `receipts/4-sound-open5-stove_build.json`).
+
+In `lab:sdlpop`, `prince fps`: the title and intro with their music
+(about 70 s), then Level 1 for 80 s with
+`HoldKeys 40 CYCLE 4F,4C,4E,4D PERIOD 60` (the kid running, jumping,
+climbing and landing), then Ctrl+Q:
+
+- `SDL audio "ahi": 44100 Hz, 2 channels, 1024 samples a buffer, format
+  0x9010`: SDL's AHI driver, 16-bit big-endian stereo, 23.2 ms buffers, as
+  upstream asks.
+- **6,357 buffers** over the run, 215 to 230 in each five-second reading
+  (the readings are 5.0 to 5.3 s apart: 43 a second, as 44,100 / 1,024
+  gives). **4 came late**, all while the music played (4 of 2,747
+  buffers then, 0.15 per cent); none in Level 1.
+- **Mixing**: with the OPL3 music, **5.7 to 13.2 ms on average** for each
+  23.2 ms buffer (25 to 57 per cent of the time it plays for), 46.9 ms at
+  the very most; in Level 1 (sound effects, no music) 0.01 to 0.02 ms, 2.0
+  ms at most. The FM synthesis is the cost: Nuked OPL3 makes its samples at
+  the chip's own 49,716 Hz whatever the output rate, so a lower SDL rate
+  would not make it cheaper.
+- Frames held at 12.0 game frames a second in Level 1 throughout (11.8 at
+  the lowest, the reading as the level started).
+- The lab did not freeze (amicradle #790's AHI race); Ctrl+Q ended the game
+  with sound on, back to the Workbench.
+
+Labs are muted: AHI was opened and fed at the full rate, which is what a
+muted lab can show. That the music and effects sound right, and whether the
+rare late buffer while the music plays can be heard, is for a listening
+test on a real instance.
