@@ -59,6 +59,9 @@ The patches, all AmigaOS only (`__amigaos__`):
 - `0002-amiga-paths.patch`: files beside the program; SDLPoP.cfg,
   QUICKSAVE.SAV, PRINCE.HOF and screenshots in `PROGDIR:User`; the whole
   `SDLPoP.ini` read with libnix's `fscanf`; a `$VER` string.
+- `0003-amiga-presentation.patch`: a 320x200 screen of the game's own by
+  default (SDL's real full screen), `window` for a window, the renderer in
+  the log, `fps` logging the frame rate.
 
 ## Installing
 
@@ -69,6 +72,19 @@ beside them. The program needs GFOpenGPU's `SDL2.module` and
 68060 with its FPU. From a Shell: `Stack 262144`, then `prince` in the
 drawer.
 
+## Running
+
+`prince` with no options opens a 320x200 screen of its own, the game's own
+frame, unscaled (SDL's real full screen through GFOpenGPU; upstream's
+default is a 640x400 window, and its full screen is the desktop's size,
+every frame scaled to it). `SDLPoP.ini`'s `start_fullscreen = false`, or
+`prince window`, gives upstream's 640x400 window on the Workbench,
+resizable; Alt+Return switches between the two, and from the window it
+makes a screen of the window's size (640x400: each pixel doubled). `prince
+fps` logs every second the game frames played, the screen updates and what
+an update cost (`fps game 12.0, screen 12.0, update 2.07 ms (max 3.28) at
+147.602 s`).
+
 ## Status
 
 **COMPILED**, not RELEASE (see Observed below and the release gates in
@@ -77,8 +93,9 @@ amicradle `docs/porting/MEASUREMENT.md`).
 | Gate | State |
 |---|---|
 | Pinned source, reproducible build, receipts | done (open5, Cradle) |
-| Start, info screen, title, level 1 shown, quit | seen once in a window (step 1 below) |
-| Presentation, keyboard, pad, sound, saves, package, play test | not yet |
+| Start, info screen, title, intro, demo level, quit | done |
+| Whole 320x200 frame on a screen of its own, frame rate measured | done (12.0 game frames a second, as the game's own timer gives) |
+| Keyboard, pad, sound, saves, package, play test | not yet |
 
 ## Observed
 
@@ -125,3 +142,40 @@ its data unpacked by `untar`:
   MINUTES LEFT" in Level 1, so the whole file is read; Ctrl+Q from the
   information screen and from Level 1 ended it cleanly (three runs);
   `PROGDIR:User` was made at the start.
+
+### Presentation, 3 November 2026
+
+Commit `6eb1593` (`patches/0003-amiga-presentation.patch`, on top of 0001
+and 0002): on AmigaOS the game's own 320x200 frame on a screen of its own by
+default, `window` for upstream's window, the renderer and the output size
+in the log, and `fps` logging each second. Executable (open5, Cradle job
+`j20261103T020043-d57fff`): SHA-256
+`f4613aaf92ee0e2652ef9ceb0649bcf126e1bba0e9a661096d80464fd0d267db`
+(595,132 bytes; `receipts/2-presentation-open5-stove_build.json`).
+
+In `lab:sdlpop` as for the build, `prince fps`, left to run from the
+information screen through the title and the intro into the demo level:
+
+- `OS3_FB: window surface in video RAM (320x200, 1280 bytes a row)` and
+  `SDL renderer "opengpu" (flags 0xa), full screen 320x200, output
+  320x200`: the RTG head switched to 320x200 and every screen filled it,
+  frame whole; SDL picked GFOpenGPU's accelerated renderer (`opengpu`,
+  render targets supported), so upstream's texture path runs as it is.
+- The game's logic runs on its own timer: in the demo level **12.0 game
+  frames a second** in all six readings (11.9 at the lowest), which is
+  what the original's 60 Hz timer and its 5-tick frame give, and the
+  screen was updated once a game frame. An update (upstream's surface to
+  texture to screen) took **1.8 to 3.1 ms on average**, 11.6 ms at most;
+  at 12 frames a second that is about 3 per cent of the time.
+- In the title and the intro, which redraw on their own timers, 26 to 53
+  updates a second at 1.6 to 6.3 ms each on average; the longest single
+  update in the 150 s was 215 ms, once, while the intro's music and
+  pictures were being loaded.
+- `prince window`: `window 640x400, output 640x400`, the information screen
+  and the title in a window on the Workbench, each pixel doubled;
+  Alt+Return gave a 640x400 screen of its own and Alt+Return again the
+  window. Ctrl+Q ended every run cleanly, back to the Workbench.
+
+![The information screen on its own 320x200 screen](docs/observed/step2-info-320x200.png)
+![The title](docs/observed/step2-title-presents.png)
+![The intro](docs/observed/step2-cutscene-princess.png)
