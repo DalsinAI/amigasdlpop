@@ -68,6 +68,8 @@ The patches, all AmigaOS only (`__amigaos__`):
   without spinning the CPU.
 - `0005-amiga-sound.patch`: the SDL audio driver and spec in the log, and
   with `fps` the mixer's buffers, late callbacks and mixing time.
+- `0006-amiga-saves.patch`: replays in `PROGDIR:User/replays`
+  (`SDLPoP.ini`), so the game writes only in `PROGDIR:User`.
 
 ## Installing
 
@@ -124,7 +126,8 @@ amicradle `docs/porting/MEASUREMENT.md`).
 | Text input (a replay named), focus loss releasing held keys | done |
 | Joystick / CD32 pad | not tested: no stick in the lab (SDL opens port 2 as a game controller) |
 | Sound | AHI opened and fed at 44.1 kHz, OPL3 music and effects mixed, late buffers rare (4 in 6,357); not heard (muted lab) |
-| Saves, package, play test | not yet |
+| Quick save, saved game, settings and replays across a cold restart | done |
+| Package, play test | not yet |
 
 ## Observed
 
@@ -305,3 +308,44 @@ Labs are muted: AHI was opened and fed at the full rate, which is what a
 muted lab can show. That the music and effects sound right, and whether the
 rare late buffer while the music plays can be heard, is for a listening
 test on a real instance.
+
+### Saves: quick save, saved game, settings and replays, 3 November 2026
+
+SDLPoP keeps the in-game settings in `SDLPoP.cfg` (it overrides
+`SDLPoP.ini` while the ini is older, and is dropped when the program
+changes: it carries the executable's checksum), the quick save in
+`QUICKSAVE.SAV`, the original game's save (Ctrl+G, from level 3) in
+`PRINCE.SAV`, the hall of fame in `PRINCE.HOF` and recorded replays as
+`.p1r` files. 0002 put the first four in `PROGDIR:User`; commit `8b52ef0`
+adds `patches/0006-amiga-saves.patch`, which puts the replays there too.
+Executable (open5, Cradle job `j20261103T022540-340c41`): SHA-256
+`5bcba9f70c9b61a4aeba20e61e631a01f68cbca0a0147517d0df29b024fa1934` (the step
+4 build's: 0006 changes only `SDLPoP.ini`, now `78c1c828...`;
+`receipts/5-saves-open5-stove_build.json`).
+
+In `lab:sdlpop`, the earlier `PROGDIR:User` moved aside, so the game
+started with none:
+
+- Level 1: the kid run into the room left of the start, F6: "QUICKSAVE",
+  `User/QUICKSAVE.SAV` (3,467 bytes).
+- Escape, Settings, Visuals, "Torch shadows enabled" on, Escape: the room
+  darkened away from its torches and `User/SDLPoP.cfg` (734 bytes) was
+  written.
+- `prince megahit 3` (upstream's level select), Ctrl+G: "GAME SAVED",
+  `User/PRINCE.SAV` (8 bytes); the torch shadows were on from the first
+  frame (the settings read back). Ctrl+Tab, a few steps, Ctrl+Tab, `lvl3`,
+  Return: `User/replays/lvl3.p1r`. Nothing was written outside `User`
+  (no `PROGDIR:replays`).
+- **Across a restart:** the lab was stopped and started again (a cold
+  boot). Every file in `PROGDIR:User` was still there with its size and
+  time. `prince`, then on the title: F9 quick-loaded Level 1 in the saved
+  room with the kid where he was saved, torch shadows on; Ctrl+Q,
+  `prince` again, Ctrl+L on the title: Level 3 from `PRINCE.SAV` with no
+  level select; Ctrl+Q, `prince`, Tab on the title: the replay `lvl3`
+  played ("LEVEL 3").
+
+![Quick-saved in Level 1](docs/observed/step5-quicksave.png)
+![After the cold restart: F9 on the title, the same room, torch shadows on](docs/observed/step5-after-restart-quickload-lit.png)
+
+Not covered: the hall of fame (it needs the game won), a full disk or a
+write-protected drawer.
