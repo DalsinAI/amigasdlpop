@@ -56,7 +56,7 @@ Build
 -----
 
 Engine commit @UPSTREAM_COMMIT@,
-built with OpenAmigaGCC @COMPILER_RELEASE@. The program's SHA-256:
+built with GFOpenAmigaGCC @COMPILER_RELEASE@. The program's SHA-256:
 @EXECUTABLE_SHA256@
 
 Port: the AmiCradle Team, https://github.com/DalsinAI/amigasdlpop
