@@ -29,6 +29,7 @@ from pathlib import Path
 KNOWN = {
     "9fcc136ab59e3bb5b91d2764d0bf290b709d72d7380be4ce0cdf005edf8eff21": "16.2.0-open3",
     "495319a2ffd803278f8827cad70074029c7aa9ecbe05d037e8646ba43ab94ab2": "16.2.0-open4",
+    "65f284476ec20cdf7851475d91d2c18d77fa6f2a0eb0f844b6ca23dbfa57eaa7": "16.2.0-open6",   # GFOpenAmigaGCC, v16.2.0-open6's x86-64 archive
 }
 OPEN5 = "GFOpenAmigaGCC 16.2.0-open5"
 
@@ -50,13 +51,13 @@ def verify(stove: Path) -> tuple[str, str]:
             raise ValueError(f"STOVE.json says {release}, the compiler says {version.splitlines()[:1]}")
         return "16.2.0-open5", "unpublished"
     raise ValueError(f"{stove} is not an OpenAmigaGCC 16.2.0-open3 or open4 or a "
-                     f"GFOpenAmigaGCC 16.2.0-open5 stove (compiler archive {got}, release {release})")
+                     f"GFOpenAmigaGCC 16.2.0-open5 or open6 stove (compiler archive {got}, release {release})")
 
 
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--stove", required=True, type=Path)
-    parser.add_argument("--release", choices=("16.2.0-open3", "16.2.0-open4", "16.2.0-open5"))
+    parser.add_argument("--release", choices=("16.2.0-open3", "16.2.0-open4", "16.2.0-open5", "16.2.0-open6"))
     args = parser.parse_args()
     try:
         release, archive = verify(args.stove.resolve())
