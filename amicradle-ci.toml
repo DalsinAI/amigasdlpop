@@ -1,0 +1,13 @@
+# amicradle-ci: the AmiCradle Team's local CI. MIT, Copyright (c) 2026 AmiCradle Team.
+schema = 1
+repo = "amigasdlpop"
+
+[stove]
+name = "os32-gcc16"
+version = "16.2.0-open6"
+
+[build]
+entry = "build-amiga.sh"
+
+[paths]
+skip = ["*.md", "docs/*", "LICENSE"]
