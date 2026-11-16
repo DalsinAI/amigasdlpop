@@ -1,0 +1,19 @@
+{
+  "name": "SDLPoP",
+  "version": "1.24rc-3c5add5-amigaos3-test1",
+  "drawer": "SDLPoP",
+  "program": "prince",
+  "cpu": "68040",
+  "fpu": true,
+  "space": 2000000,
+  "modules": [
+    "SDL2.module",
+    "SDL2_image.module"
+  ],
+  "keep": [
+    "User",
+    "SDLPoP.ini"
+  ],
+  "parent": "Work:Games",
+  "badge": "../icons/art/sdlpop.png"
+}

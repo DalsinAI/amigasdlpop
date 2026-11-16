@@ -20,5 +20,9 @@
     ["Version", "{version}"],
     ["Requires", "AmigaOS 3.2, 68040/68060 with FPU, GFOpenGPU SDL2, AHI, Prince of Persia data"],
     ["Architecture", "m68k-amigaos >= 3.2"]
+  ],
+  "root": [
+    {"name": "Install-SDLPoP", "repo": "package/installer/Install-SDLPoP", "installer": true},
+    {"name": "Install-SDLPoP.info", "repo": "package/installer/Install-SDLPoP.info"}
   ]
 }
