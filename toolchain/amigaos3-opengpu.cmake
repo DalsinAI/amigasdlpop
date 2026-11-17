@@ -36,7 +36,7 @@ set(CMAKE_AR           "${AMIGA_PREFIX}/bin/m68k-amigaos-ar" CACHE FILEPATH "")
 set(CMAKE_RANLIB       "${AMIGA_PREFIX}/bin/m68k-amigaos-ranlib" CACHE FILEPATH "")
 set(CMAKE_STRIP        "${AMIGA_PREFIX}/bin/m68k-amigaos-strip" CACHE FILEPATH "")
 
-set(AMIGA_CPU_FLAGS "-m68040 -m68881" CACHE STRING "Amiga CPU/FPU flags")
+set(AMIGA_CPU_FLAGS "-m68040 -msoft-float" CACHE STRING "Amiga CPU/FPU flags")
 set(AMIGA_RUNTIME "-noixemul" CACHE STRING "Amiga C runtime")
 set(AMIGA_THREAD_FLAGS "-pthread" CACHE STRING "Amiga pthread personality")
 

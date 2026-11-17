@@ -1,0 +1,13 @@
+{
+  "makefiles": [
+    "build-amiga.sh",
+    "toolchain/amigaos3-opengpu.cmake"
+  ],
+  "no_cpu": [
+    "build-amiga.sh",
+    "toolchain/amigaos3-opengpu.cmake"
+  ],
+  "builds": [
+    "build-amiga.sh"
+  ]
+}
