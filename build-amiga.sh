@@ -82,7 +82,7 @@ OBJS=$(sed -n 's/^OBJ *= *//p' "$WORK/src/src/Makefile")
 # upstream's flags (src/Makefile: -std=c99 -O2 -Wall -D_GNU_SOURCE=1), the
 # target's, and -fno-delete-null-pointer-checks: address 0 is memory on an
 # Amiga
-FLAGS="-noixemul -m68040 -m68881 -pthread -fno-delete-null-pointer-checks
+FLAGS="-noixemul -m68040 -msoft-float -pthread -fno-delete-null-pointer-checks
  -std=c99 -O2 -Wall -D_GNU_SOURCE=1 -ffile-prefix-map=$WORK/src=.
  -I$SDK/include/SDL2"
 LIBS="-lSDL2_image -lSDL2 -lGL -lm -pthread"
@@ -92,16 +92,23 @@ LIBS="-lSDL2_image -lSDL2 -lGL -lm -pthread"
     export SOURCE_DATE_EPOCH="$EPOCH"
     printf '%s\n' $OBJS | xargs -P "$JOBS" -I{} sh -c '
         c=$(basename "{}" .o).c
-        echo "cc $c"
+        echo "$0" $1 -c "$c" -o "{}"
         "$0" $1 -c "$c" -o "{}"' "$CC" "$FLAGS"
-    echo "link prince"
     # shellcheck disable=SC2086
-    "$CC" -noixemul -m68040 -m68881 -pthread -o prince $OBJS -L"$SDK/lib" $LIBS
+    echo "$CC" -noixemul -m68040 -msoft-float -pthread -o prince $OBJS -L"$SDK/lib" $LIBS
+    # shellcheck disable=SC2086
+    "$CC" -noixemul -m68040 -msoft-float -pthread -o prince $OBJS -L"$SDK/lib" $LIBS
 ) 2>&1 | tee "$OUT/build.log"
 
 EXE="$WORK/src/src/prince"
 [ -f "$EXE" ] || { echo "no executable: see build.log"; exit 2; }
 [ "$(od -An -tx1 -N4 "$EXE" | tr -d ' \n')" = "000003f3" ] || { echo "not an Amiga HUNK executable"; exit 2; }
+# One binary for every 68040 and 68060: -m68040 -msoft-float throughout, no
+# FPU instruction in the objects, the stove's fpuauto linked in
+# (package/soft-float.sh).
+sh "$HERE/package/soft-float.sh" "$P" "$EXE" --log "$OUT/build.log" "$WORK/src/src" > "$WORK/soft-float.txt" ||
+    { cat "$WORK/soft-float.txt"; exit 1; }
+cat "$WORK/soft-float.txt"
 
 # the drawer: the program, upstream's settings file and the licence (the
 # game data goes beside them: data/, from the user)

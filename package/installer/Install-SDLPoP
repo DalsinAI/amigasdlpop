@@ -1,20 +1,17 @@
-; $VER: Install-SDLPoP 1.24rc-3c5add5-amigaos3-test1 (3.11.2026)
+; $VER: Install-SDLPoP 1.24rc-3c5add5-amiga1-rc1 (17.11.2026)
 ; The Amiga Installer script for SDLPoP, an AmiCradle game port.
-; Made by amicradle scripts/port_installer.py: change the spec, not this file.
+; Made by amicradle scripts/ports/port_installer.py: change the spec, not this file.
 ; Run it from its icon, beside the SDLPoP drawer where the archive was unpacked.
 
 (set @app-name "SDLPoP")
-(set #version "1.24rc-3c5add5-amigaos3-test1")
+(set #version "1.24rc-3c5add5-amiga1-rc1")
 (set #drawer "SDLPoP")
 (set #program "prince")
 (set #space 1954)  ; KB
 
-; the Installer runs this after an abort too: only a stop while copying needs it
-(set #copying 0)
 (onerror
-    (if #copying
-        (message (cat "SDLPoP was not installed completely." "\n\n" @error-msg
-                      "\n\nFiles already copied stay where they are. Run Install-SDLPoP again to finish."))))
+    (message (cat "SDLPoP was not installed completely." "\n\n" @error-msg
+                  "\n\nFiles already copied stay where they are. Run Install-SDLPoP again to finish.")))
 
 ; the Installer, the CPU and the FPU
 (if (< @installer-version 2818051)
@@ -33,7 +30,7 @@
 (if (<> (exists (tackon #from #program) (noreq)) 1)
     (abort "The SDLPoP drawer has no prince in it. Unpack the whole archive again."))
 
-(welcome "This installs SDLPoP 1.24rc-3c5add5-amigaos3-test1 for AmigaOS 3.2 on a 68040, 68060 or 68080 with an FPU.")
+(welcome "This installs SDLPoP 1.24rc-3c5add5-amiga1-rc1 for AmigaOS 3.2 on a 68040, 68060 or 68080 with an FPU.")
 
 ; where: the parent drawer
 (set #default
@@ -58,7 +55,6 @@
     (abort "SDLPoP needs GFOpenGPU's SDL2.module, which is in neither LIBS:GFOpenGPU/ nor LIBS:OpenGPU/. Install GFOpenGPU (SDL2) first, then run Install-SDLPoP again. Nothing has been installed."))
 (if (and (<> (exists "LIBS:GFOpenGPU/SDL2_image.module" (noreq)) 1) (<> (exists "LIBS:OpenGPU/SDL2_image.module" (noreq)) 1))
     (abort "SDLPoP needs GFOpenGPU's SDL2_image.module, which is in neither LIBS:GFOpenGPU/ nor LIBS:OpenGPU/. Install GFOpenGPU (SDL2) first, then run Install-SDLPoP again. Nothing has been installed."))
-(set #copying 1)
 (if (<> (exists "LIBS:GFOpenGPU" (noreq)) 2)
     (makedir "LIBS:GFOpenGPU"))
 (if (<> (exists "LIBS:GFOpenGPU/SDL2.module" (noreq)) 1)
@@ -78,7 +74,6 @@
 (complete 20)
 
 ; the drawer: everything in it, but what the player has made
-(set #copying 1)
 (set #kept "")
 (if (exists (tackon #dest "User") (noreq))
     (set #kept (if (= #kept "") "User" (cat #kept "|" "User"))))
@@ -108,11 +103,13 @@
         (dest #parent)
         (choices "SDLPoP.info")))
 
+(set #later "")
 (set @default-dest #dest)
 (complete 100)
 (if @pretend
     (message (cat "Pretend: nothing was copied or changed. SDLPoP would have gone in " #dest "."))
-    (message (cat "SDLPoP 1.24rc-3c5add5-amigaos3-test1 is installed in " #dest "."
+    (message (cat "SDLPoP 1.24rc-3c5add5-amiga1-rc1 is installed in " #dest "."
                   "\n\nTo start it, open the SDLPoP drawer and double-click the prince icon."
-                  (if (= #kept "") "" (cat "\n\nLeft as they were: " #kept ".")))))
+                  (if (= #kept "") "" (cat "\n\nLeft as they were: " #kept "."))
+                  (if (= #later "") "" (cat "\n\nStill to add to the drawer: " #later ". Run Install-SDLPoP again to fetch or copy it.")))))
 (exit (quiet))
